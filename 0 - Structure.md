@@ -1,4 +1,4 @@
-# Full Stack: How to Build a Social Network
+# How to Build a Social Network
 
 ## Intro
 Hi! This is a little microproject I want to do: I want to talk a little bit about every single topic that you'll need to know about on your path to building a WEB APPLICATION. 
@@ -22,6 +22,8 @@ I got stuck on character encoding and Unicode for like 8 pages.
 Character encoding is really neat, and someday I hope to turn those pages into a totally separate presentation, but there's no way we're going to make it through everything if I don't trim some details so that we can make it through this in less than 100,000 years. 
 
 Here, I'm going to pop up the Table of Contents so you have an idea what we're going to cover - and we are going to go fast. 
+
+----
 
 # Act I: Dev
 
@@ -52,6 +54,8 @@ This divides pretty nicely into "the server we plan to connect to", "the languag
 There are two primary kinds of message you'll send to the server - GETs and POSTs. When you GET a path, you're saying to the server- whatever is there, go get it for me. When you POST to a path, you're saying - here, server, I have something, take it and put it at the path I gave you. 
 
 For example, imagine a theoretical comments section - you might GET /blogpost/1234/comments , and then send a POST to /blogpost/1234/comments containing some structured data that it would then add as a comment. 
+
+GET and POST are the important ones - GETs are for getting data, POSTS are for changing data, and that's all you really need to know. There are some more esoteric ones, like DELETE, and PUT, and HEAD, and PATCH, but you mostly don't need to use them.
 
 #### Headers 
 Your GET or POST request don't travel alone - they can also bring a bunch of metadata with them. This metadata comes in key/value pairs called "Headers". 
@@ -194,24 +198,132 @@ Another way to control that complexity is just to... embrance the madness. Get d
 
 Needless to say, unless you ARE writing a database, I don't recommend managing your own threaded concurrency and shared memory. In fact - if you're listening to me, an idiot, and learning things, you're probably not at the point in your career where you are ready to write database code yet. 
 
+----
 
 ## Git
-This deserves, just one slide.
+This deserves just one slide.
 
 Your code... goes in git. On GitHub. If you're fussy and you want to use some other source control system, by all means - but, by default, your code goes in git. On GitHub.
 
+-----
 
 ## Application Basics
+So, now that you've chosen a language, it's time to decide on... a framework.
 
 ### Framework
+Every language has a bunch of different web frameworks, each of them encompassing a single philosophy on how to build a web server. 
+
+When I first started building web applications, I tended towards very minimal framewoks, like flask for python, because their simple operation required very little learning on my part, and I could just slam code together until something interesting happened. 
+
+Then I started to tend towards more more maximal frameworks like Codeigniter for PHP, Django for Python, or Ruby on Rails for... Ruby - because they were very complete and opinionated and I learned a lot from how they wanted me to structure my code.
+
+And.. now.. I'm back to preferring very minimal frameworks because now I'm very opinionated about how I want my code to go together, and I'd rather build everything, myself, from the ground up. 
+
+So... I don't know - spend some time learning about the different philosophies behind some of the different frameworks, try some out, see what you like. 
+
+### Routing and Request, Response
+The one feature that I have never, ever seen a a web application framework leave out is routing. It feels like the minimum thing a web application framework needs to be .... is routing.
+
+As we covered a little earlier, the role of a web server is to take HTTP requests and turn them into HTTP responses - and so, the beating heart of a lot of application code is a table that looks kinda like this:
+
+```
+* GET /          => fn home()
+* GET /register  => fn register_page()
+* POST /register => fn register()
+* GET /login     => fn login_page()
+* POST /login    => fn login()
+```
+
+Just... some kind of mapping between URL paths and the functions that are responsible for responding to requests for that path.
+
+How these functions operate can vary wildly from environment to environment, but ultimately they are responsible for taking a request and converting it into a response.
+
+Uh, PHP is kind of a funny special case in this sense, because, at least the way I remember it, PHPs routing is automatic - you have PHP files in a file tree and the server automatically routes requests to the file matching the query - so, if you have `GET /home/register.php` then it's going to look in your PHP folder for `/home/register.php` and execute whatever it finds there.  
+
+As far as I know, PHP is the only "modern" language that does anything like this. It saves you the trouble of having to maintain a routing table, but at the cost of generating that routing table automatically in ways you may not approve of. 
+
 ### Local Environment Setup & Automation
-### Routing
-### Websites vs. Single-Page Applications
+Django and Rails won me over to this way of thinking, but I think it's great and it belongs everywhere: some frameworks provide a command line application with the framework that you use to run automations against your system.
+
+So, you might type... `django run`  and it'll boot up your django application, or `django create potatoModel`  and it'll create an empty potato model for you.
+
+I haven't written django in a really long time - probably almost a decade - but I'm still actively including little automation-focused command line applications with everything I write, because the convenience of being able to type `jake run`  and have my application set up all of its dependencies and boot itself up is huge. 
+
+There is no space in my head for storing complicated setup arguments or scripts.  If I run my little command line app, it'll tell me all of the things it can do, and then I don't have to remember anything.  
+
+The various `make` clones -  `make` classic, `rake`, `jake`,  and python's `invoke` - are all pretty good for this.
+
+### Classic Websites vs. Progressively Enhanced Websites vs. Single-Page Applications
+
+One of the earliest things you're going to need to decide about your application is whether it's going to operate as a classic web application or a Single-Page Application.
+
+#### Website: Classic
+The way that websites used to work, long ago, was that each individual page request would result in your getting a different HTML page. If you hit `/subscribers/jeremy`, the system would go find a subscriber named Jeremy in its database, build a HTML page for you, and return that HTML page. If you wanted to post a comment on `/blog/comments`, that page would have a HTML Form element on it, and that HTML Form element, after you filled it out, would trigger a HTTP POST request, followed by a full page reload. In fact, every single interaction would involve a full page reload.
+
+This way of doing things often felt a little sluggish - think Craigslist, or PHPBB - and it is a terrible choice for a website with a lot of interaction - buut - it's a really powerful technique for websites that don't have a lot of complex interactions. If all your application needs to do is pull database records and display them neatly, this is the way to go.
+
+#### Progressive Enhancement
+Of course, you could take a classic website and include snippets of JavaScript functionality to liven things up, add basic application features, build buttons and menus that perform more interactive functionality. If you do this, while still keeping the site largely working like a Classic Website, you're engaged in Progressive Enhancement - you've got a classic website with some UI features, but everything still works like a regular website.  Old reddit worked this way, I _personally_ liked it better than the new reddit.
+
+#### Single-Page Applications
+Nowadays the most popular way to build complicated websites is to skip the "website" part entirely: when you go to any url under modern reddit.com, for example, the site doesn't engage in routing the way that we described it earlier, at all. Instead, reddit routes everything to the same result: the entire JavaScript source code for a complete application. 
+
+This divides your web program into two programs: the Javascript client, which runs on your users' computer, in their browser, and your server, which provides the "Application Programming Interface", or API. 
+
+The client application boots up and starts running immediately, then, it uses its own internal routing rules to determine what to display to you based on the URL that it can see. If that requires information from the servers, (it will), it'll get that information by performing remote procedure calls against API urls on the reddit servers. These calls will still communicate using HTTP, but they won't send HTML - instead, they'll communicate using a object serialization protocol like JSON.
+
+#### It Doesn't Have to be JSON But It's Always JSON
+There are literally no rules about what language the JavaScript application you've loaded needs to use to communicate with the backend server. It could send binary data, or plaintext, or XML - but in practice, the "Javascript Object Notation" is the de-facto standard for all non-HTML web communication. 
+
+It became popular because it is just a subset of JavaScript, which means that JavaScript can parse it essentially for free - which means you don't have to send the user's computer a whole bunch of code for deserializing data. 
+
 ### Templating
-### RPC 
+Many web application frameworks include a templating system, which is a system for rendering arbitrary data into HTML. 
+
+You'll note that in the "Single Page Application" style of web development, there's not actually too much need to engage with templates on the server side - all your server will be doing is sending the user an application, and then communicating with that application back and forth using Remote Procedure Calls - so... any HTML befingerpoking is gonna be happening inside the JavaScript application, not from your server code. 
+
+Modern frameworks... don't bother themselves with templating nearly to the extend that older frameworks did. 
+
+### Remote Procedure Calls (RPC) 
+On the other hand, modern frameworks do a LOT of remote procedure calls over HTTP.
+
+There are potentially countless different ways to do RPC over HTTP - more schemes than you can shake a stick at - but practically the most popular method is REST.
+
+Let's talk about a few schemes: 
+
+#### XML-RPC and SOAP
+These were early standards for doing RPC calls over HTTP. They used a lot of XML rather than JSON, and tended to be very popular with Java programmers, which made them very unpopular with everyone else. We ... don't talk about them. 
+
 #### REST (FIOH)
+REST stands for "Representational State Transfer", and if you spend any time looking into the philosophies of Representational State Transfer you will be overwhelmed with a sudden desire to throw yourself into traffic. The ideas of Representational State Transfer don't actually map to API design, at all, really. REST is a philosophy about how hypermedia should work, so, if you're designing a new HTML, you should read about REST - but you're not designing a new HTML, because we already have HTML. Which is doing fine.
+
+The name REST is all wrong if you're using it to describe doing RPC over HTTP, it should have been called FIOH. 
+
+**"Fuck it, Overload HTTP".**
+
+I've stolen this term from a [very good blog post](https://twobithistory.org/2020/06/28/rest.html) . 
+
+The way that Fuck it, Overload HTTP works, is that you just map all of your HTTP paths to different things your system can do.
+
+So, if you POST some JSON to `/register` with your email and password in it, it could create a user account. A POST to `/login` might log you in, and a GET from `/employees/12834` might retrieve the employee data from employee #12834. 
+
+With a little bit of skill and thought you can map your entire application's programming model to HTTP calls against specific URLs. Lots of programs are written this way.
+
+And remember those esoteric HTTP verbs from before, like DELETE and PUT and HEAD and PATCH? You can use those here, too, if you want. Or don't. It's totally up to you!
+
+#### GraphQL 
+One thing you will quickly discover writing apps in the FIOH style is that writing expressive queries in HTTP urls is really hard - and, for security reasons, you're not allowed to just pass structured query language directly through your web server into your database. 
+
+So, some folks at Facebook built GraphQL, which is a whole query language that you can offer over HTTP, as part of your API.  If a lot of your API is devoted to queries, GraphQL can probably replace a lot of it with a query language.
+
+I don't really have a lot of thoughts about GraphQL. If you need to write an API that's capable of processing really complicated queries, maybe it's the right tool for you!
+
+#### Just Use FIOH
+At least, for now, the dominant way to do things is REST - or, FIOH, if you'd prefer.
+
 ### Structure
-### Serialization
+Okay, jumping back to your web framework - one of the things that many web frameworks provide is a recommended structure for your codebase. 
+
 ### Middleware
 
 
