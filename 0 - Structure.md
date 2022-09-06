@@ -585,9 +585,6 @@ When you write something, anything to your database, a huge number of indexes ne
 
 Now, it might seem like I'm being a bit contradictory here - you should have indexes for every query, you should pull as much information from indexes as you can, but also, your indexes slow down writes and grow unbounded until they fill your database server's RAM and blow up prod. But yes, all of those things are true at the same time. 
 
-### Replication & Sharding
-We're going to talk more about scaling and failover for your database in Act II, when we get to talking about running production systems.
-
 #### Schema Evolutions/Migrations
 If you're using a SQL-based database, you are going to be asked to define your table layout up-front. This is your database schema, describing the shape of data in your database, as well as the indexes that must be created. 
 
@@ -597,7 +594,20 @@ Many languages and environments provide a system that allows you to define a sta
 
 I honestly can't imagine operating software against a SQL database without using a tool like this. They're very useful. 
 
-#### Mongo
+### Mongo is Web Scale
+There are a lot of database products out there! It's an exciting and interesting market and totally worth exploring to find the product that best fits the project that you're planning on building. 
+
+I'm fond of Mongo - because it doesn't enforce a schema on any of its documents.
+
+One of the most important things to learn about when you're evaluating a new database is: how do I connect more than one of them? 
+
+#### Distributed Reads, Replication & Failover
+One of the most basic replication modes - one that's available in just about every database - is replication to a secondary server. 
+
+#### Distributed Writes (Sharding)
+#### Distributed Writes (Multi-Primary)
+
+
 
 
 ### Files
@@ -627,6 +637,8 @@ I honestly can't imagine operating software against a SQL database without using
 
 # Act II: Prod
 
+## Clouds & Control Planes
+
 ## DNS
 
 ## Dev and Prod
@@ -652,7 +664,6 @@ I honestly can't imagine operating software against a SQL database without using
 
 ## Backups
 
-## Clouds & Control Planes
 
 ## Secrets Management
 
