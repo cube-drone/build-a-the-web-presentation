@@ -12,7 +12,7 @@ Here's about the skill level I'm targeting here:
 
 That's what we're here to talk about! 
 
-## Summary
+## Fast
 We are going to be going through this very quickly. 
 
 This is out of necessity - the last time I tried to put something like this together
@@ -253,7 +253,7 @@ There is no space in my head for storing complicated setup arguments or scripts.
 
 The various `make` clones -  `make` classic, `rake`, `jake`,  and python's `invoke` - are all pretty good for this.
 
-### Classic Websites vs. Progressively Enhanced Websites vs. Single-Page Applications
+### Classic Websites vs. Single-Page Applications
 
 One of the earliest things you're going to need to decide about your application is whether it's going to operate as a classic web application or a Single-Page Application.
 
@@ -318,27 +318,289 @@ So, some folks at Facebook built GraphQL, which is a whole query language that y
 
 I don't really have a lot of thoughts about GraphQL. If you need to write an API that's capable of processing really complicated queries, maybe it's the right tool for you!
 
+#### WebSockets
+This is something that Single Page Applications can do that classic websites definitely can't: it can open a WebSocket against the backend server. 
+
+Unlike HTTP request/response, where every interaction with the server is going to involve a request and response, a WebSocket is a full bidirectional communication pathway between the client and server - the connection stays open, and either side of the transaction can send messages whenever they want.
+
+This is most useful when programming real time systems - chat clients, for example. Building a chat client using request response would require that your client application regularly poll the server - do you have any new information for me yet? What about now? What about now? Using a websocket, the server can wait, and push messages to the client when it actually has something to send. 
+
+There are drawbacks to this, though - maintaining a WebSocket connection on the server side is much more heavyweight than just holding on to. 
+
+On top of that, remember our shared-nothing process scaling model? This significantly complicates that, because our websocket connection represents a permanent connection to a server. The socket needs to stay connected to the same process each time it connects to your backend, and that process needs to be able to simultaneously manage connections to hundreds of different clients. 
+
+This is really hard without services that can manage some concurrency - these guys. So, socket-heavy architectures tend towards more consolidation and more concurrency - larger servers, using threads and shared memory - which is why backends in node, Elixir and Rust are often popular for real-time systems.
+
 #### Just Use FIOH
 At least, for now, the dominant way to do things is REST - or, FIOH, if you'd prefer.
 
-### Structure
-Okay, jumping back to your web framework - one of the things that many web frameworks provide is a recommended structure for your codebase. 
+### MVC
+Okay, jumping back to our web framework - one of the things that many web frameworks provide is a recommended structure for your codebase. 
 
-### Middleware
+Django and Rails, for example, are built around Model-View-Controller architectures, where your code is divided into a 
+* Models, responsible for mapping database tables to application objects
+* Views, responsible for mapping application objects to HTML using templates, and 
+* Controllers, which are the parts that actually handle the request/response, and tie Models and Views together to build the application's functionality
+
+### Pipelines and Middleware
+
+Rust's warp and Node's express are built around more of a Pipeline model - a request is passed in and then the request and response are successively modified in stages until the response is ready to give back to the user. 
+
+A very common concept in web frameworks is the idea of "middleware" - once you build a pipeline stage that does something like "rate limiting" or "checks authentication", it's easy to roll it out across dozens of different endpoints.
+
+-----
 
 
-## Config
+## Connect & Config
+The first thing your application will do when it boots up is to connect to a variety of services - databases and the like - and then set up its router and start routing requests.
+
+This is an important step - building database connections is an expensive task, so your system definitely should not be building a fresh database connection for every request - instead, when your system boots up, that's when it builds all of the connections it's going to need for the lifetime of the process.
+
+Because our servers are ephemeral - shared nothing - it's good to try to keep this connection step _fast_ - that way, if something bad happens, the servers can just quickly reboot, reconnect to its backing services, and go on their merry way - in fact, you can set up your application to just fail with an error code if it ever loses a critical connection - instead of building reconnection logic, your application's supervisor will just reboot the application again and again, until it eventually manages to reconnect properly. 
+
+If we're connecting to a lot of other services, though, we need their locations, their credentials.
+
+Obviously, we shouldn't hard-code these locations into our product. I feel like that's such a basic observation that I almost feel silly saying it. 
+
+### Prefer URLs for Locating Resources, Uniformly
+Have you ever seen a block of code that looks like this? 
+```
+database_protocol = 'postgres';
+database_host = 'localhost';
+database_port = 1234;
+database_user = 'gork';
+database_password = 'mork';
+database_name = 'application'
+```
+Yeah, that's a line of details that you'll need to connect to a database, and six whole different variables.
+
+If only there were some sort of **uniform** way to represent the **location** of a **resource**. 
+
+Of course, what I'm leading you to is that this is another use of our old friend the URL.  We can take that whole set of connection details and squish it together into one neat, tidy URL: 
+```
+postgres://gork:mork@localhost:1234/application
+```
+URLs are _great_ when it comes to providing the unambiguous, complete location for a resource somewhere on the internet - which is - exactly what you want to provide when you're connecting to backing services. 
+
+### Config Files
+A common strategy for managing your configuration details on start-up is to maintain a set of reasonable defaults, then, parse a config file located somewhere in the system. The config file might be represented in INI, or XML, or JSON, or YAML, or TOML, really any user-editable serialization format should do the trick. 
+
+Of course, you don't necessarily want to hardcode the location of the config file - then you won't be able to run two copies of the same application on the same system - and you might want to change individual variables up when you boot up the application. 
+
+For this, we want something a little more flexible than config files. 
+
 ### Environment Variables
-### Database Config
+So - and I'm biased here, I think this is the best way to set up configuration information for your app - you can just pass in all of the configuration as key-value arguments when you boot up the application. 
 
-## Database
-### Disk
-#### SQL
-#### Consistency (ACID)
-#### Distribution
-#### Schema
-* Schema Evolutions
-### Binaries
+You can either do this by setting up and parsing arguments passed to your server software when it boots up - like
+```
+>>> myserver --databaseUrl=postgres://blahblahblah
+```
+
+or, and this is extremely well supported on Linux systems, you can pass them in as environment variables:
+
+```
+>>> MYSERVER_POSTGRES_URL=postgres://blahblahblah myserver
+```
+
+One of the really nice things about environment variables is that you can set them permanently for a bash session - so if you're coding and you want to change the postgres environment for your next ten runs of the application, you can set that environment variable and it'll be passed, automatically, to your application. 
+
+A lot of testing frameworks, application supervisors and containerization solutions for deployment also give you fine-grained control over which environment variables are passed in to your application when it boots - making this a super well-supported way to handle flexible configuration for your application. 
+
+### Database Config
+All of these solutions are well and good for taking hardcoded variables and instead passing them in when you boot up your application. 
+
+However - these values are locked at boot time. Your application is likely to be put up and left running for weeks or months at a time - you don't always want to have to reboot and rerun all of your servers to make a simple config change. 
+
+So, for variables that you want to be able to change frequently, I recommend storing that information in your database, in a configuration table. You probably shouldn't do this with database connection details, but for a lot of other things it's super useful - in particular, this supports feature flags really well. 
+
+One thing about config, though, is that these variables tend to be hit very, very frequently. I don't usually advocate keeping anything in your servers' local memory - but - because config is small - I think that the best way to maintain a fast, reliable config is to have every process in your entire cluster cache a full copy of the entire config object in local memory and refresh it periodically. 
+
+That might not be necessary, though - how you deal with config is up to you. 
+
+#### The Config Heirarchy
+
+Okay, so, for every hardcoded variable in your system, there's a potential four-step heirarchy of where that value could come from, each overriding the next:
+
+* Default
+* Config File
+* Environment Variable
+* Database Config
+
+And you don't need all of these for every application - I think that Config File _and_ Database Config are both a little heavyweight for little applications, and the Database Config doesn't necessarily need to be able to override everything in the Config File - especially connection urls.
+
+-----
+
+## Backing Services
+And now we need to talk about some of the backing service you are almost certainly going to need to connect to, to turn your application into an application. 
+
+### The Database
+The beating heart of every modern web application is some kind of database. 
+
+It is the permanent store of information at the center of everything. 
+
+#### Database Authentication
+Most commercial databases have a built-in authentication system. This authentication system is to authenticate access directly to the database itself - it's important not to confuse the database's authentication with your own application's authentication. 
+
+If people want to log in to your website, they'll be interacting with auth code that you wrote. Database Auth controls who is allowed to connect to the database and what they are allowed to do - so, pretty much, just your application, and you. 
+
+Some databases don't ship with any authentication at all - or, authentication is turned off by default. Everybody who can find the database on the network can do whatever they want with it. It's really important that - if you make a database accessible on a public network, you must authenticate access to it. Again, this feels so obvious that I'm embarrassed to say it, but, every year there are reports of hackers just cruising in to un-secured systems with real production data on them.
+
+#### Database Protocols
+The way that you connect to your database is rarely simple HTTP requests. Instead, databases usually interact via some protocol of their own design - very often a binary protocol rather than a plaintext one. 
+
+Postgres, for example, communicates using the Postgres Wire Protocol. Mongo communicates using the Mongo Wire Protocol. 
+
+Communicating with these databases almost always involves finding someone's implementation of the database protocol for your language of choice. Very often, there are many competing implementations of the database libraries - you'll have to evaluate these and choose ones that work well for your purposes. 
+
+Remember when looking for database libraries, you're evaluating them based on 
+
+* How popular are they? Are lots of other people using these libraries?
+* Are they maintained? When was the last time the library maintainers changed anything? 
+* Are they documented? Can you understand how to use the library? 
+* Do they use a programming model that makes sense in the language that you're working in? 
+* Do they support connection pooling? Reconnect logic? 
+* Do they have the official blessing of the database company, or are they officially published by the makers of the database? 
+
+#### Not Talking about SQL
+The dominant way to interact with databases is using a Structured Query Language.  
+
+A full discussion of how modern SQL and NoSQL databases work is outside of the scope of this presentation. It's a big, big topic that deserves a whole presentation on its own. 
+
+Tl;dr: In your database, you have tables of data, and you'll issue queries that request and update rows against those tables. To learn more, read a database manual.
+
+#### Normalization
+(joke on slide: "All problems in computer science can be solved by another level of indirection")
+
+Okay, I need to talk about normalization a little. 
+
+Just to introduce the topic, let's imagine we have a table with some users in it:
+
+| id | user  | country | ip            | type  | perms  |
+|----|-------|---------|---------------|-------|--------|
+| 1  | dave  | USA     | 203.22.44.55  | admin | write  |
+| 2  | chuck | CA      | 112.132.10.10 | admin | write  |
+| 3  | biff  | USA     | 203.22.44.55  | norm  | read   |
+
+Maybe you're looking at this and thinking: hey, this table has some problems.
+
+Like - if all admins have "write" perms, and all norms just have "read" perms, why not separate out the admin stuff into its own table. We can just store the ID of the rows we're referencing. 
+
+| id | user  | country | ip            | type_id  |
+|----|-------|---------|---------------|----------|
+| 1  | dave  | USA     | 203.22.44.55  | 1        |
+| 2  | chuck | CA      | 112.132.10.10 | 1        |
+| 3  | biff  | USA     | 203.22.44.55  | 2        |
+
+| id | type_name  | perms   |
+|----|------------|---------|
+| 1  | admin      | write   |
+| 2  | normal     | read    |
+
+Look, we did a normalization! Now if we want to update our admin permissions, we only have to make that write one place, instead of hundreds of times across our entire table. 
+
+And the only expense was that we made our read a little more complicated - now we have to join data across two tables when we read, rather than just the one table.
+
+Awesome! But... we can go further. Let's normalize harder.
+
+| id | user  | country_id | type_id  |
+|----|-------|------------|----------|
+| 1  | dave  | 1          | 1        |
+| 2  | chuck | 2          | 1        |
+| 3  | biff  | 1          | 2        |
+
+| id | type_name  | perms   |
+|----|------------|---------|
+| 1  | admin      | write   |
+| 2  | normal     | read    |
+
+| id | country  | full-country-name        |
+|----|----------|--------------------------|
+| 1  | USA      | United States of America |
+| 2  | CA       | Canada                   |
+
+| id | user_id       | ip_id        |
+|----|---------------|--------------|
+| 1  | 1             | 1            |
+| 2  | 2             | 2            |
+| 3  | 3             | 1            |
+
+| id | ip             |
+|----|----------------|
+| 1  | 203.22.44.55   |
+| 2  | 112.132.10.10  |
+
+UNGH. Can you feel that. It's SO NORMALIZED. We've got a many-to-many relationship so that users can have lots of IP addresses, but those IP addresses live in their own table, just in case one of them changes.
+
+We've also got our countries neatly organized into their own table, in case the country name changes. 
+
+We get all of this, and the only expense is that our queries get just a touch more complicated, because now they're querying not one but five different tables.
+
+#### Denormalization
+(joke on slide: except too many layers of indirection)
+
+Uh, you might have noticed that that last example was a bit of a joke.
+
+It's possible that country codes don't need to be normalized into their own table. 
+
+In fact, country codes change very, very rarely, if at all - and - it turns out, doing a full-table find-and-replace once every 5-10 years might be less complicated than doing every single query for the entire lifetime of your application across two tables instead of just one. 
+
+That goes doubly for maintaining a whole extra table for IP address normalization, which I definitely just did to pull your chain a little. 
+
+The driving factor behind normalization comes from a good place, a place of good engineering that lives deep within your gut, but - it's really possible for the desire for properly normalized systems to lead us down paths that actually make our designs worse, and harder to maintain.  
+
+There's a lot of value in simplicity, honestly, the first table I showed you was probably the easiest of the lot to actually understand and work with. 
+
+When I worked at a major telecom over a decade ago, every single row in every single table was normalized - like in my second example, the joke example. It meant that no matter what sort of data you wanted to update, you were guaranteed that you'd only ever need to update it in one place at a time - or, more likely, you'd have to create a new row and write a reference to that new row. Individual SQL queries would often run 400, 500 lines, just to pull basic information out of the system.
+
+Don't do that. It's bad.
+
+#### Avoid Unnecesary Joins
+Joins make reads slower, more complicated, and harder to distribute across machines. 
+
+Up until fairly recently, MongoDB just didn't allow joins at all. Google's first big cloud-scale database, BigTable, was so named because it just gave you one big table. No normalization, just table.
+
+Normalization is still a enormously useful technique for how you design the layout of your data, but be aware: you probably need a lot less of it than you think.
+
+### Indexes
+"My queries are slow". 
+
+Again, database indexing is a huge, huge topic, more than I can cover here without going into just even significantly more detail. 
+
+But, I have a few things to say: 
+
+#### Running a Query from an Application Server on Production Without an Index: It's Never Okay
+The only time it's really acceptable to run an unindexed query is when you're spelunking for data on your own, and even then, you're taking your life into your own hands. Letting an unindexed query into the hands of your users is a mistake - worst case scenario, malicious users will find that query and hit it again and again and again until your database server lights itself on fire and falls into the ocean. 
+
+#### Covered Queries are Great
+If you _only_ request information out of the database's index, the database doesn't have to read anything from disk. This is a huge optimization - take advantage of it when you can.
+
+#### Indexes Live in RAM
+This is a bit of a broad generalization, but indexes are huge data structures that live in RAM. Every new index on a large database table fills up RAM on the database you're writing to. 
+
+Most systems accumulate data a lot faster than they delete data - many systems don't delete data at all, or only do it if required by law - what that means is that the indexes will only ever get bigger, bigger and bigger and bigger, until eventually they don't fit on one computer any more. 
+
+#### Every Index Slows Down Writes
+When you write something, anything to your database, a huge number of indexes need to be updated as well. 
+
+Now, it might seem like I'm being a bit contradictory here - you should have indexes for every query, you should pull as much information from indexes as you can, but also, your indexes slow down writes and grow unbounded until they fill your database server's RAM and blow up prod. But yes, all of those things are true at the same time. 
+
+### Replication & Sharding
+We're going to talk more about scaling and failover for your database in Act II, when we get to talking about running production systems.
+
+#### Schema Evolutions/Migrations
+If you're using a SQL-based database, you are going to be asked to define your table layout up-front. This is your database schema, describing the shape of data in your database, as well as the indexes that must be created. 
+
+Once your table is live, the only way to make changes to that table is to write schema-changing ALTER queries against the table.
+
+Many languages and environments provide a system that allows you to define a starting schema for a table, and then represent any changes to that schema in code. This means that the state of your table schema at any given time is fully represented in your codebase's history. These systems are usually called Evolutions or Migrations. 
+
+I honestly can't imagine operating software against a SQL database without using a tool like this. They're very useful. 
+
+#### Mongo
+
+
+### Files
 ### RAM
 ### Queues
 ### Task-Specific Databases 
@@ -373,7 +635,14 @@ Okay, jumping back to your web framework - one of the things that many web frame
 
 ## Separate Build and Deploy Steps
 
+### Containers
+
+### Supervision
+
 ## Continuous Integration
+
+#### Replication vs Sharding
+
 
 ## Seamless Operations
 
