@@ -599,10 +599,38 @@ There are a lot of database products out there! It's an exciting and interesting
 
 I'm fond of Mongo - because it doesn't enforce a schema on any of its documents.
 
-One of the most important things to learn about when you're evaluating a new database is: how do I connect more than one of them? 
+One of the most important things to learn about when you're evaluating a new database is: what happens when I need more than one database server? 
 
 #### Distributed Reads, Replication & Failover
-One of the most basic replication modes - one that's available in just about every database - is replication to a secondary server. 
+One of the most basic and important ways to replicate data across servers - one that's available in just about every database - is replication to a secondary server. 
+
+This is a scheme where our primary server acts as a regular database, but it also streams all of its writes to backup servers. These backup servers cannot accept writes, except from the primary - if they did, there wouldn't be a way for any other servers to get those writes. 
+
+These backup servers are useful for two purposes - first of all, if something bad happens to your primary database, your primary database can fail over to one of the backup servers, which takes its place as the new primary. 
+
+The second thing that you can do here is perform slightly stale reads from the backup servers. 
+
+Most services do a _lot_ more reads than writes, so distributing reads to secondary servers is actually an enormously effective scaling strategy - and this is one of the simplest models for database replication, so it's win-win! 
+
+However - if you think about it - because every write is distributed, first to the primary, then to all of its secondaries, each database in the cluster is absorbing the full brunt of all of the writes being taken on by your databases - this strategy can't scale writes at all. 
+
+##### Whoops, I Distributed Too Much Read Load and Now I Don't Have a Failover Strategy
+
+One concern - let's imagine you're distributing read load to all of your secondaries, and they're all operating at just under 100% load. 
+
+Then, something happens to your primary, or even one of the secondaries: there's nowhere for that load to go. So instead your servers start to fail. 
+
+Guess what! You just triggered a _cascading failure_. 
+
+##### Whoops, The Secondaries Aren't Able To Keep Up With Writes and Now I'm Reading Super Stale Data
+
+The secondary servers _should_ be able to write exactly as fast as the primary server, but if they are dealing with so many reads that writes start to slow down, it's possible that they could start falling behind at processing their write load. 
+
+If the secondary servers start to fall behind, the data on these servers will start being more and more out-of-date. Things could get weird.
+
+##### Whoops, I Read from Stale Data and then Wrote That Data Back To the Database, Overwriting Newer Data
+
+Yeah, I've made a lot of mistakes with replication. 
 
 #### Distributed Writes (Sharding)
 #### Distributed Writes (Multi-Primary)
