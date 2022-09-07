@@ -679,12 +679,53 @@ You'll note that both of the sharding schemes I've talked about here don't even 
 
 Let's look at some problems with our sharding strategy.
 
-Lets look at how I distributed writes: using the first digit of the users' ID. 
+Lets look at how I distributed writes: using the first digit of the users' ID.  There are two different problems with this strategy - first of all, let's imagine our user IDs are monotonically increasing over time - a common strategy for allocating IDs is just to count up, so every ID is going to be one higher than the last ID. That means that when we're writing new users to our database, we'll be writing users like this:
 
+```
+10901 (Database A)
+10902 (Database A)
+10903 (Database A)
+10904 (Database A)
+10905 (Database A)
+...
+``` 
+
+Well... that's not distributed at all. We've distributed all of our writes to Database A. Eventually, we'll write 10,000 users and start distributing all writes to Database B instead, and then Database C, and so on! 
+
+This is a common problem with monotonically increasing values and shard keys - and a common resolution is to either select non-monotonically increasing ID values, or hash the IDs before we use them as shard keys.
+
+```
+10901 - 220A2BA5 - (Database A)
+10902 - FB2C68A8 - (Database B)
+```
+
+Here, 10901 hashes to 220A, and that's very different from the next value's FB2C, so they'll distribute evenly across databases - in fact, we could have just used these hash values as the key in the first place.
+
+Back to our sharding strategy: 
+
+```
+database A: users with an ID Hash that starts with 0,1,2,3,4,5,6
+database B: users with an ID Hash that starts with 7,8,9,A
+database C: users with an ID Hash that starts with B,C,D,E,F
+```
+
+It still has a problem, which is that the sharding rules are unevenly distributing load across the databases.  Database A in this scheme is always going to be working a little harder than the other databases. In fact, you'll note that you can't evenly divide the 16 characters of hex across 3 databases, because math - but this is resolvable by simply... using a longer shard key and sharding across ranges.
+
+```
+database A: users with an ID Hash from 0-33
+database B: users with an ID Hash from 33-66
+database C: users with an ID Hash from 66-99
+```
+
+Okay, now that we're at this point, how do we add a new server to the shard map?  The answer to that question is _it's a real pain in the ass._ Schemes like consistent hashing can help, but by and large this is the value that having a database that manages its own shards brings to the table: it can rebalance shards when new shards enter the pool, without you having to manage that yourself.
+
+Okay, new problem: what happens when we want to query for all userPreferences that are darkMode, regardless of user ID. We just want to count all the darkMode users in our application.
+
+Well - the only way to do that is to split up the query, make it against every server in the cluster, and then, once we've gathered results from every server in the set, we merge them together. This is, notably, very expensive - sharding starts to become a losing strategy when you are working with data that doesn't have queries that clearly divide across servers.
 
 #### Distributed Writes (Multi-Primary)
 
-
+##### UUID
 
 
 ### Files
