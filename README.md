@@ -724,6 +724,17 @@ Okay, new problem: what happens when we want to query for all userPreferences th
 Well - the only way to do that is to split up the query, make it against every server in the cluster, and then, once we've gathered results from every server in the set, we merge them together. This is, notably, very expensive - sharding starts to become a losing strategy when you are working with data that doesn't have queries that clearly divide across servers.
 
 #### Distributed Writes (Multi-Primary)
+The common thread in both replication and sharding is the idea that there's still only one server at a time responsible for writes to any given unit of data. This dramatically simplifies enforcement of consistency around your data - so long as there is one source of truth about any given record in your database, you can trust that you'll never have to deal with write conflicts. There can't be two different histories for any given item, because all of the writes are ultimately resolved in one place.
+
+However, some products allow writes from any server in the cluster. This introduces the obvious problem: what if two different servers write the same record at the same time? They've introduced a conflict, and with no authoritative primary server, there's no simple way to resolve this conflict. 
+
+You could just give write preference to whichever write happened first, discarding any conflicting write that happens after the write it conflicts with - but that wanders into the problem of "well, now all of the servers have to agree about exactly what time it is" - which, if you have learned a bit about distributed systems, is near impossible. 
+
+For a really long time, nobody even attempted to write databases that depended on strict synchronized time guarantees because they are so hard to do effectively. Google actually announced that they had built a database that resolved conflicts using synchronized clocks - which they accomplished by building atomic clocks directly into their data centers and carefully routing network connections to those clocks to keep clock skew to an absolute minimum. If you are not Google, this solution may be impractical - however, they proved that time-synchronization-based-conflict resolution is, in fact, possible - and an open-source version of that same solution, CockroachDB, is available today. This ties the performance of your write system to the quality of clock synchronization that you're able to achieve - which, even with the inaccurate tools available to us atomic-clock-lacking plebs, is still good enough for most production systems. 
+
+I think that's funny because clock-synchronization based solutions were once dismissed as impractical in all of the distributed systems textbooks. 
+
+
 
 ##### UUID
 
