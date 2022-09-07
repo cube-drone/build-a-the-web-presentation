@@ -172,9 +172,9 @@ Programming like this is hard. You have to relearn a lot of your habits to switc
 
 This also isn't really concurrency - it all still happens on a single thread of execution - but - this technique allows you to write a single process that stays white hot. Each individual process is able to deal with hundreds of simultaneous requests, because whenever it's waiting on something for request A, it can be working on something for request B, or C, or D, or E. If you have more than one CPU - if you want TRUE concurrency - you still have to scale out using the process model - one process per CPU - but only one process per CPU, because the process itself is handling the mechanics of keeping itself busy.
 
-This is the scheme underlying modern web systems like node.js and Go. I love node.js. I... have complicated feelings about Go.
+This is the scheme underlying node.js, or some of python's newer frameworks. 
 
-#### No Shared Memory
+##### No Shared Memory
 The process-based concurrency model is very powerful and flexible - but - if you think about it - it really, really limits the amount of memory available to each of your processes. Lets say you have a computer with four CPUS, and 16GB of RAM - if you're process scaling with Ruby, and you create 16 processes to jump between, each process only has access to 1 gigabyte of working memory. If you're process scaling with node, and so you only need to create four processes - one per CPU - each process only has 4GB of memory to work with. 
 
 Now, one of the reasons this is important is because a lot of process-scaled languages are also garbage collected and very flexible. Which means - memory leaks can accumulate pretty easily in the code. Which means your program can eat all of its working memory, and then die. 
@@ -190,13 +190,15 @@ If we _were_ writing a database, we'd want both full concurrency and access to a
 
 And where you have threads, you have synchronization issues. It's a fact of life - any time two CPUs have access to the same part of memory at the same time, you're only moments away from a whole raft of horrifying issues having to do with mutexes and semaphores and race conditions.
 
-Java, Scala, C#, Elixir, Erlang, Rust, C++, and C are all languages that let you go to town with threads and shared memory.
+Go, Java, Scala, C#, Elixir, Erlang, Rust, C++, and C are all languages that let you go to town with threads and shared memory. Many of them ALSO have access to async coding primitives. You can mix and match.
 
-One way to control that complexity is with immutable data structures and message passing - creating a bunch of little micro-systems that send messages to one another - they almost feel like little processes within the application itself - this is based on a technique from Erlang, although commonly it is called the Actor model - and you'll find versions of it in most of these languages.
+One way to control that complexity of managing access to mutable shared memory is with immutable data structures and message passing. Immutable data is an enormously powerful technique for concurrent systems, because you don't have to manage access to it - it's always safe to read - the only thing that needs to be consistent is its lifecycle - that data has to be readable as long as there are still threads that might want to read it. A very common pattern for creating stable, manageable concurrent systems is by creating a bunch of little micro-systems that send immutable messages to one another - each thread almost feeling like a little processes within the application itself - this is based on a technique from Erlang, although commonly it is called the Actor model - and you'll find versions of it in many of these languages.
+
+Another way to control the complexity of shared mutable state is with clever data structures. Using tools like atomic operations and copy-on-write, it's possible to build data structures that are highly resistant to being used in ways that will corrupt data.
 
 Another way to control that complexity is just to... embrance the madness. Get deep into mutex town and hope to hell you don't make a mistake. This is a common tactic for C++ programmers, who are crazy, and Rust programmers, who have invented a compiler so complicated that if you can write programs for it, at all, they're probably safe to run.
 
-Needless to say, unless you ARE writing a database, I don't recommend managing your own threaded concurrency and shared memory. In fact - if you're listening to me, an idiot, and learning things, you're probably not at the point in your career where you are ready to write database code yet. 
+Needless to say, unless you ARE writing a database, I don't necessarily recommend managing your own threaded concurrency and shared memory. In fact - if you're listening to me, an idiot, and learning things, you're probably not at the point in your career where you are ready to write database code yet. 
 
 ----
 
@@ -330,6 +332,11 @@ There are drawbacks to this, though - maintaining a WebSocket connection on the 
 On top of that, remember our shared-nothing process scaling model? This significantly complicates that, because our websocket connection represents a permanent connection to a server. The socket needs to stay connected to the same process each time it connects to your backend, and that process needs to be able to simultaneously manage connections to hundreds of different clients. 
 
 This is really hard without services that can manage some concurrency - these guys. So, socket-heavy architectures tend towards more consolidation and more concurrency - larger servers, using threads and shared memory - which is why backends in node, Elixir and Rust are often popular for real-time systems.
+
+#### WebRTC
+Another way for Single Page Applications to communicate is with WebRTC - or Web Real-Time-Communication, a protocol that allows clients to communicate amongst themselves in a peer-2-peer fashion, useful for exchanging high speed audio and video data. 
+
+We're not talking about p2p today. Like I said before, that's out of the scope of this presentation.
 
 #### Just Use FIOH
 At least, for now, the dominant way to do things is REST - or, FIOH, if you'd prefer.
@@ -601,6 +608,10 @@ I'm fond of Mongo - because it doesn't enforce a schema on any of its documents.
 
 One of the most important things to learn about when you're evaluating a new database is: what happens when I need more than one database server? 
 
+You don't need to distribute your data for scale up front. That is way premature optimization. Any database will get you to your first 10,000 users without needing to be distributed.
+
+You do, however, need a failover plan, on day one. If your database goes down, what do you do? If your answer is "spend six hours loading a backup", that's fine - you just need A plan for this, because it will happen - and six hours of downtime is a lot of downtime.
+
 #### Distributed Reads, Replication & Failover
 One of the most basic and important ways to replicate data across servers - one that's available in just about every database - is replication to a secondary server. 
 
@@ -613,6 +624,8 @@ The second thing that you can do here is perform slightly stale reads from the b
 Most services do a _lot_ more reads than writes, so distributing reads to secondary servers is actually an enormously effective scaling strategy - and this is one of the simplest models for database replication, so it's win-win! 
 
 However - if you think about it - because every write is distributed, first to the primary, then to all of its secondaries, each database in the cluster is absorbing the full brunt of all of the writes being taken on by your databases - this strategy can't scale writes at all. 
+
+But - we're not scaling yet. We're just providing a failover strategy - so that if our database goes down, well, there's another one, right there, waiting to take on the load.
 
 ##### Whoops, I Distributed Too Much Read Load and Now I Don't Have a Failover Strategy
 
@@ -633,6 +646,42 @@ If the secondary servers start to fall behind, the data on these servers will st
 Yeah, I've made a lot of mistakes with replication. 
 
 #### Distributed Writes (Sharding)
+Replication can distribute read load, but how do we distribute write load? Since we're writing everything to every server in our cluster, write load is just going to grow and grow until our servers fall over - or we stop being popular.
+
+One way is simply... not to write everything to every server.
+
+If, for example, we have tables that don't join against other tables - say, EmployeeData joins against User, and ThumbnailFile joins against File, but these tables have no natural, in-database links.
+
+There's nothing that stops us from simply hosting these tables on different databases. This is one of the strengths of databases that discourage joins - each individual collection can live on a totally different server cluster - it doesn't matter.
+
+Beyond that, we can start looking at how even individual tables can be segmented across servers.
+
+Take, for example, a UserPreferences table. Let's imagine that we have a whole bunch of user-id to user preference mappings in a big table.
+
+| id | user_id | key             | value |
+|----|---------|-----------------|-------|
+| 1  | 12344   | darkMode        | on    |
+| 2  | 12344   | fabricSoftening | off   |
+| 3  | 34566   | darkMode        | off   |
+
+Well, it would make a lot of sense to keep all of the data for a single user on a single database server - because all of our queries are going to query user preferences for a single user.
+
+So our sharding might distribute users like this:
+```
+database A: users with an ID that starts with 1,2,3,4
+database B: users with an ID that starts with 5,6,7,8
+database C: users with an ID that starts with in 9,0
+```
+
+Then, whenever we write a user, we check which database to write it to, first, and only write to that database. Whenever we query userPreferences, well - we're only every querying userPrefences for one user at a time - so we'll run the query only against the server that matches the user we're querying for.
+
+You'll note that both of the sharding schemes I've talked about here don't even require any cooperation from the database itself - you can literally just write your application to use a different database connection for different tables, or shard your data right at the application level. However - many database providers will give you tools to manage these strategies at the database level - which is convenient.
+
+Let's look at some problems with our sharding strategy.
+
+Lets look at how I distributed writes: using the first digit of the users' ID. 
+
+
 #### Distributed Writes (Multi-Primary)
 
 
