@@ -1023,14 +1023,77 @@ Having a "log in with Google" or "log in with Twitter", or even "log in with Git
 
 -----
 
+## Application
+Finally, you've got a language up and running, backing services, automation, authentication, you're almost at the point where you can start building a real product! Hooray!
 
-## Scheduling & Background Tasks
+This part is, uh, largely up to you! Go build an application!
 
-## Rate Limiting
+### Relationships Are n^2 And Must Be Restricted Somehow
+Everything you manage in user-space is going to be fairly well contained within that user. This should shard fairly well, scale linearly - every new user is going to add one new user to your system.
 
-## Logging
+There's a problem, though - your users interact with one another.
 
-## Graphs & Charts
+If you have N users, every connection point between a user and another user in your system is something that's going to have potentially n-squared values. This means that even with modest user counts, you can have tables with billions or trillions of entries. User relationships, messages, status updates grow incredibly quickly, and are very likely to be the first scaling barrier you encounter.
+
+If you're wise, you'll consider restricting the number of relationships users can have up-front. Steam, for example, will provide you with the up-to-date status of no more than 250 friends at one time. 
+
+Or, you'll restrict the amount of information users have access to about all of their friends - twitter and facebook, for example, allow unlimited relationships, _but_ when you log in to their applications what they're showing you is not an up-to-date look at 100% of all of those relationship updates - they're showing you a curated selection of some of what your relationships are posting.
+
+Unrestricted full status updates about an unlimited pool of users in a growing system will eventually lead to your system collapsing under its own weight. There is no technology solution that can sync that much data.
+
+### Fan Out 
+Another common topic in application design is labelled "fan out" - let's imagine you have a twitter-like system where you can subscribe to updates from dozens or hundreds of people.
+
+If you're able to subscribe to thousands of people, it doesn't necessarily make sense for you to follow thousands of separate data feeds - this can be very expensive - instead, when these people write updates, they'll write them into your data feed. This can mean that they'll perform thousands of writes when they tweet, but that your system's reads will be much faster, because you will be reading from just one feed, rather than thousands.
+
+However, there's a problem with this: when a user has millions of people following them, every tweet that they produce is going to attempt to write to millions of feeds, which is ... slow, expensive, potentially disastrous for a system.
+
+So, it makes more sense for users who have millions of followers to publish a feed that people periodically check, but it makes more sense for users who have tens of followers to write to people's feeds rather than maintaining a feed of their own.
+
+### Thundering Herds
+This is a fun problem! Let's imagine that you have a long, difficult to calculate computation that gets hit frequently in your system - obviously this is the sort of thing that you are going to want to cache, so that your servers don't have to struggle to re-do this calculation again and again, and again.
+
+So you cache this thing, say, for 5 minutes every time it gets calculated, and it helps, but then your system's load starts to look like this: spiky, with a big spike every 5 minutes. And that spike keeps getting bigger and bigger, even though your heavyweight calculation isn't getting any harder to calculate.
+
+What's happening is that every five minutes, the long, difficult to calculate computation is falling out the cache. Then, tens or hundreds of people all request the value at the same time. Now, not only is your server suddenly performing a difficult, expensive computation, but it's performing that same computation hundreds of times at once, slowing all of them down - especially if they're all sharing access to the same resource. Then, once all of these computations finally manage to get out of each other's hair, one of them finally writes the value to cache - which is going to stop new request from coming in, but each of our computations is also going to finish, and write to cache, also, hundreds of times. Now we're good, for another five minutes, until this whole rigamarole starts all over again.
+
+This is... bad!
+
+There are a few different ways to stop the herd:
+
+* You can keep very hot cache data in cache forever, recalculating it periodically in the background.
+* You can lock around expensive calculations, throwing an error if a user tries to recalculate something that's currently already being recalculated.
+* You can engage in even more complex and esoteric schemes to make sure that your cached entry stays in cache and fresh, and only gets recalculated once at a time.
+
+### Distributed Locks
+If you are working with a key-value store shared amongst your entire backend, locking is pretty easy. Write your server's id to a time-bounded lock-specific key, failing if the key already exists, and you've created a situation where only one server at a time should be able to succeed at that call. 
+
+When you're done with whatever you're doing, delete the key. 
+
+Oh, I should make something clear: this is a simplified solution that values efficiency over correctness - it's possible for a server to die while holding a lock, and then whatever is being locked will just stay locked until the TTL expires - it's also possible for race conditions to occur here, causing your locked code to run more than once. 
+
+If what you are guarding with the lock is something where you need a correct locking scheme, this is not your solution. However, most of the time, and this is a common development motto of mine, _good enough is good enough_.
+
+( [For more exploration of this topic: a discussion addressing a much more comprehensive locking scheme in Redis; and why it's not actually necessarily any better](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) )
+
+
+### Background Tasks & Scheduling
+As we mentioned earlier, while we were talking about queues, sometimes work needs to be done in the background of your system.
+
+You'll use queueing to tee up the work that needs to be completed, but you'll also need to set up servers that sit, and wait, and listen on the queue for work to come, completing that work as necessary.
+
+On top of that, there are going :to be tasks that aren't triggered from user inputs, but instead need to happen on a fixed schedule. Say, for example, every 30 seconds you want to cac
+
+
+### Testing
+
+### Rate Limiting
+
+### Logging
+
+### Graphs & Charts
+
+
 
 # Act II: Prod
 
@@ -1054,9 +1117,6 @@ Having a "log in with Google" or "log in with Twitter", or even "log in with Git
 ### Supervision
 
 ## Continuous Integration
-
-#### Replication vs Sharding
-
 
 ## Seamless Operations
 
