@@ -1098,12 +1098,21 @@ This testing is, in my opinion, overwhelmingly useful, as it manages to establis
 
 Unit tests are useful for validating that individual components in your system are functioning exactly as expected - but don't sleep on the value of integration testing as an automated check that your system actually does what it says it does.
 
-### Rate Limiting
-
-
 ### Logging
+Everything that your systems do could ultimately become useful while investigating errors, and so, most production systems log what they're doing pretty verbosely. 
+
+The most common way for systems to log their output is simply to log that output to STDOUT - to the console, essentially - pushing the responsibility of managing those logs off to the system that is running the application.
+
+This is also one of those places where running the entire system from a single thread becomes a little more appealing: managing access to STDOUT across threads is in and of itself a bit of a pain in the ass compared to the simplicity of just using `print` or `console.log` everywhere. 
+
+Once your logs are in STDOUT, the next step, in production, is to send all of them to a centralized system that allows you to aggregate, search through, archive, and eventually delete all of the logs. 
+
+It's very common for systems to divide their logging up into log levels - `log` for informative, regular updates on the system's operation, `warn` for unusual errors and concerns, and `error` for really gnarly stuff.  
+
+Also: when you're running the system locally, in development, you'll probably want to hide almost all of the logs, only showing `warn`s and `error`s. 
 
 ### Graphs & Charts
+
 
 ### Feature Flagging 
 
@@ -1152,6 +1161,9 @@ Unit tests are useful for validating that individual components in your system a
 
 
 ## Secrets Management
+
+## Rate Limiting
+Moving from software as a service to video games has been a bit of a culture shock for me. You have to be very well-established as a business to see even an tiny fraction of the level of casual abuse that video game servers (and employees) get from their users. 
 
 ## Content Delivery Networks 
 
