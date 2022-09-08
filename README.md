@@ -1076,16 +1076,27 @@ If what you are guarding with the lock is something where you need a correct loc
 
 ( [For more exploration of this topic: a discussion addressing a much more comprehensive locking scheme in Redis; and why it's not actually necessarily any better](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) )
 
-
 ### Background Tasks & Scheduling
 As we mentioned earlier, while we were talking about queues, sometimes work needs to be done in the background of your system.
 
 You'll use queueing to tee up the work that needs to be completed, but you'll also need to set up servers that sit, and wait, and listen on the queue for work to come, completing that work as necessary.
 
-On top of that, there are going :to be tasks that aren't triggered from user inputs, but instead need to happen on a fixed schedule. Say, for example, every 30 seconds you want to cac
+On top of that, there are going :to be tasks that aren't triggered from user inputs, but instead need to happen on a fixed schedule. Say, for example, you're trying to solve a thundering herd problem by looping a cache renewal.
 
+Scheduling has a lot to do with locking and the thundering herd problem - because, you probably only want scheduled items to execute once per time it appears in the schedule. If you have dozens of servers all attempting to execute the same schedule, you are going to create your own thundering herd. 
+
+There are lots of different ways to solve this - the most recent way I've solved this one is by having the worker servers hold a regular election to determine which one is going to be the keeper of the schedule.
+
+The design of your scheduling system has to answer a lot of awkward questions: should scheduled items execute on the scheduler node, or should they be pushed into the queue to be executed by worker nodes? What happens if a ton of the same scheduled job go on the queue and waits for a while, then all execute at the same time? What happens if the entire schedule is being executed on one node and that node can't keep up with the scheduled tasks?
+
+You don't necessarily need comprehensive answers to all of these questions up front: early on in your systems' life, you probably won't have too many scheduled tasks to run anyways.  
 
 ### Testing
+Every integration point between your backend and your frontend is an API contract, and you should be testing that every single endpoint in your system holds up its side of the contract.
+
+This testing is, in my opinion, overwhelming useful, as it both establishes and validates the contract between your system and 
+
+### Documentation
 
 ### Rate Limiting
 
