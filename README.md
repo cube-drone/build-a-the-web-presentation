@@ -769,6 +769,8 @@ If you're looking for a sane set of defaults for a new product, consider
 * Redis for your cache, streams, queue, and search.
 * VictoriaMetrics for your metrics, as a time-series database.
 
+Of course, you shouldn't introduce services until you know that you'll need them.
+
 Also, by the very nature of time, this segment may be badly outdated by the time you're actually hearing it - so, before taking my word for it, you should absolutely go do this research yourself. 
 
 ------
@@ -864,12 +866,69 @@ And you don't need all of these for every application - I think that Config File
 
 -----
 ## Authentication
-Now you've got your ser
+Now you've got your services all set up, you're booting up a web server, and you're connecting to them! Now what? 
+
+Well, now you have to write the same awful thing that constitues 90% of all web programming forever: authentication. That's what we do here, we tirelessly reinvent wheels, and this is a wheel you'll have to reinvent, too. 
+
+People are going to need to register to use your site, login, log out, recover their accounts, all of the basics. 
+
 ### Passwords
+So, a user creates an account by giving you a username and password. 
+
+Well, we already have a problem, just up front, we can't store a password in our database. What if someone gets access to our database? What if _we_ get access to our database? Aside from credit card numbers, passwords are some of the most sensitive user data we can get access to, so we have to be unusually careful with them. (As for credit card numbers: just don't store those - if you think you're in a position where you need to, you probably don't. )
+
+There is an interesting property of hash functions that we take advantage of to store passwords without actually storing those passwords. 
+
+Let's imagine that we have a hash function, splorthash - when we get the user's password, we run splorthash on the password and then, we save the result of the hash function, not the password itself. Hash functions are irreversible - so the password hash can't be used to get the password - but, when the user logs in again, we can hash the password that they provide, and if the hashed output is the same as the hash that we have stored, we are good to go - the password must be the same.  So, since the 70's, every halfway reasonable system containing passwords has stored the passwords as hashes, rather than as the passwords themselves. 
+
+#### Reversing the Irreversible
+Did I say that hash functions were irreversible? That's only partially true.  If I have the result of a hash function, I can simply try every possible password, until I get the hash that matches. If I've walked away with your entire database, I can start by hashing `aaaaaaaa`, testing if that matches any password hashes in the entire database, and then `aaaaaaab`, and so on and so forth, until I have cracked all of the passwords in the entire database. This ability to mass-guess passwords is tied to both my ability to test against the entire database at the same time, as well as my ability to run hash functions very, very quickly. 
+
+This means that we, as responsible siteowners, must guard against this scenario as best as we can, with two techniques.
+
+First of all, the hash function that we use to test passwords should be slow-running. Modern GPUs can compute millions of hashes per second. It doesn't help at all that cryptocurrency also leans on hash computation and so a lot of people are very carefully optizing hash rates. The current top-of-the-line GPU can perform 133 million SHA-256 hashes per second. That's a lot of password tests. That GPU could try out every common name and last name and dictionary word, combined with every single year for the last 100 years, combined with all of the obvious character-to-number translations. It could test out all of these things in less than a second - so if your password happens to be `passw0rd1`, or `d0lph1n1998` that is not going to hold up. 
+
+We can slow down that process by selecting a hash that is computationally difficult to compute - and, it's important to know that there is a difference between cryptographically secure hashes - like SHA-256 - which are intended for use in cryptography but very fast and thus a bad choice for passwords - and cryptographically secure hashes intentionlly designed to be slow, like bcrypt, which are _intended to be used for passwords_.
+
+We can also slow that process down by using a completely different hash function for every user in the table. This sounds incredibly labor intensive, _but_, all it takes to make a new hash function out of an existing hash function is to add some garbage data. 
+
+So, `bcrypt(password+garbage)` and `bcrypt(password+differentgarbage)` are two totally different hash functions that will produce different outputs. This extra block of garbage is called the "salt", it's randomly generated when you save the password the first time, and it's generally stored along with the hashed password. 
+
+With these techniques in place, you (and anyone with access to your database) should be unable to reverse engineer your users' passwords. 
+
+Unless they are using `passw0rd1`. Someone's gonna guess that.
+
+Ultimately, with enough time, even these methods can't protect weak passwords from being cracked - just as personal advice, I'd recommend using a different long, complicated, generated password for every single service that you interact with, and you keep all of those passwords in a encrypted password manager so that you don't have to remember them all, and the encryption key for your password manager should be a good long complicated passphrase that you can still remember easily - like a favorite entire line of dialogue from a movie that you enjoy, smashed into a different entire line of dialogue, to make a much weirder line of dialogue.
+
+bad website password: `tiger1968`
+good website password: `vQOgLT80bJ40MNOXnlMHfGAXJx25X`
+
+bad master password: `sexysaxman`
+good master password:  `mahnamahnabaweepgrahnahweepninnibongjoonho`
+
+#### Credential Stuffing
+Some of your users are going to use the same email and password on every server they visit for their entire lives. This isn't out of stupidity, it's usually just out of laziness - they probably have a better password for their banking or personal email, but your website is just some stupid place where they download horse gifs. Why waste a good password remembering on that? 
+
+These people are dangerous. They come pre-hacked. Sure, you know how to do basic security, but do you trust that every single website this person has ever been to does basic security? 
+
+So, what attackers will do, is download huge torrent files containing mega lists of username and password combinations that have been breached. Then, they'll try all of these passwords, one at a time, against your login page. This gives them access to two things: 
+
+* huge numbers of accounts on your service, which you definitely do want them to have access to
+* intel: this user is still using this compromised email and password combination. This means it's a good email and password combination to try elsewhere.
+
+One thing you can do to fight this is automatically test a users' email and password hash against HaveIBeenPwned, a gigantic repository of hacked passwords. You can, of course, do this without revealing your users' email and password - it's a hash based solution, one that reveals nothing about your users to the service - but if a user's email-and-password combination is a hit in the database, you can ask them to try again, or apply additional security measures to their account.
+
+Another thing you can do to fight this is to rate limit login attempts. That's only so effective - users who are mounting cred stuffing attacks are usually doing it from a whole network of IP addresses rather than just one - but it does help. 
+
+It's also useful to attempt to detect a lot of logins from the same IP address - if hundreds or thousands of people all log in from the same place, either someone is trying to run a botnet, or they're trying to run a large real-life event. Of course, if it's that second thing, your overzealously configured security mechanisms could ruin their day.
+
 ### Sessions
+
+
 ### Email
 ### CAPTCHA
 ### Two-Factor
+### Anonymous Access
 ### Account & Password Recovery
 ### OAuth and Third Party Login
 
