@@ -1091,19 +1091,32 @@ The design of your scheduling system has to answer a lot of awkward questions: s
 
 You don't necessarily need comprehensive answers to all of these questions up front: early on in your systems' life, you probably won't have too many scheduled tasks to run anyways.  
 
-### Testing
+### Integration Testing
 Every integration point between your backend and your frontend is an API contract, and you should be testing that every single endpoint in your system holds up its side of the contract.
 
-This testing is, in my opinion, overwhelming useful, as it both establishes and validates the contract between your system and 
+This testing is, in my opinion, overwhelmingly useful, as it manages to establish, validate, **and** explain the contract that your system intends to uphold.
 
-### Documentation
+Unit tests are useful for validating that individual components in your system are functioning exactly as expected - but don't sleep on the value of integration testing as an automated check that your system actually does what it says it does.
 
 ### Rate Limiting
+
 
 ### Logging
 
 ### Graphs & Charts
 
+### Feature Flagging 
+
+
+----
+
+## Client
+
+### Bundling & Packaging
+
+### Swappable Client Implementations
+
+### Automated Error Reporting
 
 
 # Act II: Prod
