@@ -900,12 +900,6 @@ Unless they are using `passw0rd1`. Someone's gonna guess that.
 
 Ultimately, with enough time, even these methods can't protect weak passwords from being cracked - just as personal advice, I'd recommend using a different long, complicated, generated password for every single service that you interact with, and you keep all of those passwords in a encrypted password manager so that you don't have to remember them all, and the encryption key for your password manager should be a good long complicated passphrase that you can still remember easily - like a favorite entire line of dialogue from a movie that you enjoy, smashed into a different entire line of dialogue, to make a much weirder line of dialogue.
 
-bad website password: `tiger1968`
-good website password: `vQOgLT80bJ40MNOXnlMHfGAXJx25X`
-
-bad master password: `sexysaxman`
-good master password:  `mahnamahnabaweepgrahnahweepninnibongjoonho`
-
 #### Credential Stuffing
 Some of your users are going to use the same email and password on every server they visit for their entire lives. This isn't out of stupidity, it's usually just out of laziness - they probably have a better password for their banking or personal email, but your website is just some stupid place where they download horse gifs. Why waste a good password remembering on that? 
 
