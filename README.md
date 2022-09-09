@@ -1224,7 +1224,9 @@ Does that stop me from running the entirety of my day-job out of AWS? No.
 It turns out that the most valuable development tool in 2022 isn't a code editor or a database product - it's a credit card.
 
 ### Kubernetes
-Well, if clouds are so great, why not an open-source cloud that you can manage yourself. Kubernetes allows you to take a bunch of boring ol' dedicated servers and run software on them to get an interface that's kind of like what you'd get from Amazon's ECS: a much more abstract system that can run all kinds of containers. 
+Well, if clouds are so great, why not an open-source cloud that you can manage yourself? 
+
+Kubernetes allows you to take a bunch of boring ol' dedicated servers and run software on them to get an interface that's kind of like what you'd get from Amazon's ECS: a much more abstract system that can run all kinds of containers. 
 
 One big caveat, though - Kubernetes was designed to allow server teams to offer an AWS-like product. It is absolutely not designed for one person to launch and maintain. Instead, if you build software intending to deploy it to a Kubernetes cloud, you can then go to one of many Kubernetes providers and deploy it against their cloud - cross compatible with most of the other Kubernetes providers.
 
