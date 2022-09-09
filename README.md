@@ -1020,6 +1020,10 @@ Another road to getting users logged in quickly to your application is to piggyb
 
 Having a "log in with Google" or "log in with Twitter", or even "log in with Github" button in your login window - if users already have accounts on those services - is a much lower barrier to entry to your application then asking users to create yet another password for yet another service. 
 
+### Per-User Flags
+This is just a lil' tip, but include an array row with your user table for per-user tags.
+
+They're good for all kinds of things. Per-user feature flags. Permissions. You'd be surprised at the utility of a list of arbitrary strings. 
 
 -----
 
@@ -1112,10 +1116,24 @@ It's very common for systems to divide their logging up into log levels - `log` 
 Also: when you're running the system locally, in development, you'll probably want to hide almost all of the logs, only showing `warn`s and `error`s. 
 
 ### Graphs & Charts
+Once you've released a new feature, how do you know that it's doing anything at all? How do you know that it's working? How do you know how fast it actually is in a production scenario?
 
+The answer to all of these questions and more is _in the graphs and charts_.
+
+Well, where do graphs and charts come from?
+
+Your application servers can emit all kinds of metrics while it's running, either pushing them directly into a time series database like InfluxDB, _or_ making them visible on a `/metrics` endpoint for a Prometheus scraper to hit regularly and gather data from. Either way, that data gets pulled into a big database for to be converted into charts and graphs.
+
+Charts and graphs are pretty addictive. You can set them up for pretty much any functionality under the sun. 
 
 ### Feature Flagging 
+With database-modifiable config and per-user flags, we have a lot of toggles that we can use to switch features on and off while they're in development.
 
+Simply turning a whole feature on or off with a `isSplartFeatureOn` flag in your config allows you to turn the feature on and off without tying that to a complete feature deployment on production, and allows you to ship partially complete features to master, allowing smaller, more frequent pushes. They're also great if you plan schedule a time to roll the feature out without having to do a deploy at a very specific moment in time.
+
+Using user tags, you can also flag the feature on, giving the users a `splartFeature` tag if they're allowed to see the `splartFeature`  before it hits general availability. We can use this, for example, to give QA users or beta users advanced access to a feature that's not availble to everyone just yet.
+
+A feature can also be rolled out gradually; in the global config you can set a `splartFeaturePercentage` - if the hash of a user's ID, modded by 100, is less than the `splartFeaturePercentage`, then they get to see the feature. If it's higher, they don't. 
 
 ----
 
