@@ -1163,6 +1163,8 @@ A guideline for keeping your infrastructure as understandable and manageable as 
 
 This is a lot of extra work up-front, but - the payoff is that you have a pretty in-depth audit trail of exactly what you've created, and where, including a git history explaining all of the things that you've changed over time. 
 
+-----
+
 ## DNS
 First of all, obviously, you're going to need a domain name. 
 
@@ -1171,6 +1173,8 @@ What's a lot less obvious, though, is that once you have a domain name, you're g
 These are usually very cheap - like, I run them for personal projects cheap - and the difference between having DNS updates resolve in minutes rather than hours or days is _huge_. It is a noticeable improvement.
 
 A cool tool for scripted management of DNS is OctoDNS.
+
+-----
 
 ## Clouds & Control Planes
 Where are you going to host your software? I'm going to sort these from least to most expensive. 
@@ -1228,12 +1232,22 @@ Well, if clouds are so great, why not an open-source cloud that you can manage y
 
 Kubernetes allows you to take a bunch of boring ol' dedicated servers and run software on them to get an interface that's kind of like what you'd get from Amazon's ECS: a much more abstract system that can run all kinds of containers. 
 
-One big caveat, though - Kubernetes was designed to allow server teams to offer an AWS-like product. It is absolutely not designed for one person to launch and maintain. Instead, if you build software intending to deploy it to a Kubernetes cloud, you can then go to one of many Kubernetes providers and deploy it against their cloud - cross compatible with most of the other Kubernetes providers.
+One big caveat, though - Kubernetes was designed to allow server teams to offer an AWS-like product. It is absolutely not designed for one person to launch and maintain. Instead, if you build software intending to deploy it to a Kubernetes cloud, you can then go to one of many Kubernetes providers and deploy it against their cloud - your deployment should be cross compatible with *any* Kubernetes provider.
 
 This helps you avoid vendor lock-in somewhat - you can always take your software from one Kubernetes provider to another, expecting that they'll act pretty much the same. Also: a huge amount of software has sprung up around the Kubernetes ecosystem, which is cross-compatible with any Kubernetes cloud. 
 
 Those are the good things. The bad thing? Kubernetes providers are _expensive_. Like, as-expensive if not more expensive than proprietary cloud rollouts. 
 
+When I'm building software for myself, I don't consider Kubernetes or cloud products really viable solutions, because their costs can get so out of control so fast. Instead, I stick to dedicated servers or VPS solutions, because that's what I can afford. On the other hand, I work at a VC-backed startup and it would be, I think foolish of us not to be using big cloud tools to scale up as quickly and seamlessly as possible. All of these different solutions have their pros and cons depending on what you're trying to accomplish.
+
+### More IaC
+When automating rollouts against dedicated or VPS servers, automatic provisioning tools like Ansible or Chef are the standard. 
+
+On the other hand, when automating rollouts against Kubernetes or big cloud providers, the automation tools are tools like things like CloudFormation or Terraform. 
+
+I'm reluctant to admit it, but I'm much more experienced with Ansible than I am with Terraform. I'm getting more obsolescent every day. 
+
+-----
 
 ## Dev and Prod
 
