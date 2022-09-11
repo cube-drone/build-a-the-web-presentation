@@ -1,25 +1,21 @@
 # How to Build a Social Network
 
 ## Intro
-Hi! This is a little microproject I want to do: I want to talk a little bit about every single topic that you'll need to know about on your path to building a WEB APPLICATION. 
+Hi! This is a little microproject I want to do: I want to compress my years of experience building the API backend of a top-50 Steam game into a bunch of weird, rambling advice that I can deliver with all of the authority of someone who can't differentiate success due to merit from success due to luck.
 
 ## You
-Here's about the skill level I'm targeting here: 
-* You can program
-* You know the basics
-* You know some data structures and 
-* You're starting to wonder how to tie those ideas together into a whole application.
+If you don't know the basics of programming, nothing that we cover here is going to make any sense to you. I'm hoping to target an audience of at least junior-level developers who understand how to code but maybe want some advice on the bigger picture story of how to construct an application.
 
 That's what we're here to talk about! 
 
 ## Fast
 We are going to be going through this very quickly. 
 
-This is out of necessity - the last time I tried to put something like this together
-
-I got stuck on character encoding and Unicode for like 8 pages. 
+This is out of necessity - the last time I tried to put something like this together I------ got stuck on character encoding and Unicode for like 8 entire pages. 
 
 Character encoding is really neat, and someday I hope to turn those pages into a totally separate presentation, but there's no way we're going to make it through everything if I don't trim some details so that we can make it through this in less than 100,000 years. 
+
+Based on the word count and my average elocution speed, I'm estimating that just working through the whole essay is going to take me about two and half hours. And I speak.. relatively quickly. 
 
 Here, I'm going to pop up the Table of Contents so you have an idea what we're going to cover - and we are going to go fast. 
 
@@ -34,18 +30,26 @@ The first thing to talk about is what a web application looks like.
 
 * You have a browser. 
 * You type in cube-drone.com/hats. 
-* It uses DNS, the Domain Name System, to resolve farts.org to an IP address. 
-* It uses HTTP, the Hypertext Transfer Protocol to send a request to farts.org 
-* There's a server on the other end. 
-* It gets the request for "GET /hats" and responds with a page of HTML. 
-* Now you're looking at a website.
+* The browser automatically adds `http://` to the front of that
+* It uses DNS, the Domain Name System, to resolve `cube-drone.com` to an IP address. 
+* It uses HTTP, the Hypertext Transfer Protocol to connect to port 80 on the IP address it got for  `cube-drone.com` requesting `GET /hats`.
+* The server responds: with a 300 redirection, telling it that actually it should go look at `https://cube-drone.com/hats`, because we use encryption in this house young man
+* The browser tries again, with that new url, this time trying port `443`, the port for encrypted HTTP traffic. 
+* There's some web application server code on the other end of that connection. It gets the request for `GET /hats` and responds with a page of HTML. 
+* The browser gets that page of HTML and renders it in glorious beautiful HTML style. 
+* Inside that HTML is a whole mess of Javascript, which executes code to build and construct a whole little application inside the browser.
+* That in-browser application does a bunch of interesting stuff, up to and including sending remote procedure calls back to the `https://cube-drone.com`  server to perform commands and ask for more information.
+* That's a web application! 
 
 So building web applications is largely about programming the parts that are happening on the server over here. 
 
 ### HTTP
-HTTP, the Hypertext Transfer Protocol, it's all just a bunch of fancy stuff that sits on top of regular ol' TCP/IP.
+HTTP, the Hypertext Transfer Protocol, is all just a bunch of fancy stuff that sits on top of regular ol' TCP/IP.
 
 #### What's In a URL
+
+_put a diagram here, dummy_
+
 * Protocol (http, or https - or redis, or postgres, or gopher, or...)
 * Hostname (and port, if necessary)
 * Path & Query
@@ -55,7 +59,7 @@ This divides pretty nicely into "the server we plan to connect to", "the languag
 #### GET & POST and some more esoteric codes
 There are two primary kinds of message you'll send to the server - GETs and POSTs. When you GET a path, you're saying to the server- whatever is there, go get it for me. When you POST to a path, you're saying - here, server, I have something, take it and put it at the path I gave you. 
 
-For example, imagine a theoretical comments section - you might GET /blogpost/1234/comments , and then send a POST to /blogpost/1234/comments containing some structured data that it would then add as a comment. 
+For example, imagine a theoretical comments section - you might GET `/blogpost/1234/comments` , and then send a POST to `/blogpost/1234/comments` containing some structured data that it would then add as a comment. 
 
 GET and POST are the important ones - GETs are for getting data, POSTS are for changing data, and that's all you really need to know. There are some more esoteric ones, like DELETE, and PUT, and HEAD, and PATCH, but you mostly don't need to use them.
 
