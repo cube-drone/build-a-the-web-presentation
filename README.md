@@ -986,6 +986,8 @@ CAPTCHAs are ultimately kind of a losing game: AI is getting smarter faster than
 
 With all of those things being said, it is _still_ really important to guard account creation with a CAPTCHA. It *is* an important line of defense against bots. 
 
+You'll need lots of different lines of defense against bots. They are pernicious and constant. 
+
 ### Location-Aware Security
 Your users will almost always log in from the same country - the same ISP. 
 
@@ -1126,6 +1128,12 @@ Your application servers can emit all kinds of metrics while it's running, eithe
 
 Charts and graphs are pretty addictive. You can set them up for pretty much any functionality under the sun. 
 
+My personal favorite charts, the ones that I reference tirelessly, are: 
+
+* the charts for endpoint timings - how long are your endpoints taking to respond to queries? This has a direct relationship with the overall health of your system - if things are starting to slow down, you'll see them here first.
+* the number of active users on your platform _right now_ - this one should ebb and flow with a very predictable pattern, and if you see a sudden sharp shock in the numbers - a sudden precipitious drop - something bad's happening
+* the number of server reboots that are occurring - aside from during tumultuous events like deploys, these should be stable and quite low - if lots of servers start rebooting, something is probably wrong
+
 ### Feature Flagging 
 With database-modifiable config and per-user flags, we have a lot of toggles that we can use to switch features on and off while they're in development.
 
@@ -1142,7 +1150,7 @@ There are two sides to the website: the backend API and the frontend single-page
 
 I'm a lot less talented with frontends than I am with backends, but I know one or two useful tips: 
 
-### Bundling & Packaging
+### Bundling and Packaging
 One of the biggest components of any client-side javascript stack is the bit that takes hundreds of files and libraries and compresses them all into one big wad of javascript that the user can download and execute. 
 
 If possible, try to keep this big bundle as small as possible: don't pull in a whole bunch of unnecessary libraries if you don't have to. I mean, that's good advice in general, but extra good advice if you're trying to fit your entire application into an object that you're going to be distributing to every single person who visits your website.
@@ -1152,6 +1160,14 @@ Because the bundle that contains all of the javascript that runs your site is ju
 
 At work I set it up so that any time anybody pushes a branch to github, it uploads a new version of the bundle, and then anybody with an admin flag on their account can swap at any time between any branch's most recent version of the website code, and ... I think that's been one of my better ideas in the past few years. It was a bit of extra effort, but it makes showing off in-development features within the team very easy, and testing new features in production also very easy. 
 
+### Stop Hitting Yourself
+If you control your client, you can end up being your own worst enemy. Let's imagine you write a function that requests a resource from your server, and if it doesn't get that resource, just turns around and tries again. 
+
+Now, let's imagine on your server side, you introduce a small bug - the code performs a difficult, slow computation, and then just before it hands it off to the user, it does something stupid and throws a 500 instead. 
+
+Let's say you have 10000 active users - now you have 10000 clients endlessly looping a difficult, slow computation against your backend. Your logs show endpoint timings starting to slow down, your autoscaling systems start to fire, it's like you're being hit by a distributed denial of service attack. Because you are. From your own users, running the client you wrote. Great job. Stop hitting yourself.
+
+When you're writing code that deals with errors, consider increasing the amount of time on every retry, prompting the user before retrying, or, simply showing an error to the user to let them know that something weird happened.
 
 # Act II: Prod
 You have a product! Congratulations!
@@ -1398,6 +1414,8 @@ Even as something of a Full Stack Developer myself, I have to point out that bei
 
 The idea that everybody at your company should be able to do everything all the time is maybe a bit naive - sometimes people are better at things than others. Specialization may be for insects, but it's also for companies. 
 
+One useful piece of advice that I've heard is to try to consider your own skillset T-shaped: you broadly understand enough things to ship an entire project, but there's one thing that you care about very deeply and your skillset in that matter is rich and deep.
+
 ## ChatOps
 Chat tools like Slack, Discord, and Microsoft Teams - and their open-source alternatives like IRC and Matrix - are becoming de-facto communications standards for coordinating teams. I can't imagine a modern tech company _not_ coalescing around a chat client. 
 
@@ -1429,6 +1447,10 @@ Say, for example, you accidentally have a loop in your job system that re-introd
 
 Infinite scaling also gives you all of the rope you need to hang yourself with infinitely large bills, if you aren't careful about setting tight boundaries around how large your system is allowed to scale. 
 
+Some providers that provide this kind of tooling offer you rich, detailed, powerful tools to see day-by-day breakdowns of exactly how much you're spending, which are critical, and you should take full advantage of them.  Some other providers, and I'm not going to name names, but, CLOUDFLARE, will just fully ride out the month and then blindside you with a bill for enough money to put a down payment on a house, and then use that to muscle you into an expensive enterprise contract.  
+
+This is the most concrete advice you're going to get from this entire document. Don't enable pay-per-request Cloudflare features. Ever.
+
 ## The Enduring Utility of Vertical Scaling
 A lot of what we've talked about when it comes to scaling focuses on flexibility, replication, horizontal scaling, and infinitely scalable backing services - _but_ - it's important to remember that you are not Google. 
 
@@ -1440,7 +1462,41 @@ A lot of the orthodoxy about how to super-scale up comes from companies that hav
 
 Wow. You... listened to for a _really_ long time. 
 
-* Understand your concurrency model and how it affects your scale-up plan
+Let's summarize some of the takeaways of our talk:
+
+* Understand your language's concurrency model and how it affects your scale-up plan
 * Choose your databases with an understanding of how they're going to manage replication
 * There are lots of task-specific backend services, and you'll probably need a few of them.
-* 
+* Configure your application by passing URLs to backend services through environment variables
+* Store passwords in a slow, secure password hash designed explicitly for the task of storing passwords
+* Don't try to send your own emails, you need to use a service for that
+* Use HTTPS.
+* Rate limit everything, especially authentication.
+* Make sure to provide password recovery options for your users.
+* Set up a CAPTCHA to discourage bots.
+* If something seems a little suspicious about a user's login, check in with their email address before letting them log in.
+* Allow anonymous access to your service using either unauthenticated endpoints or temporary ephemeral accounts - it will drive adoption of your service.
+* Allow login from external providers to convert users without requiring an email and password.
+* Use feature flags to launch functionality without actually launching it, show test features to only specific users, and turn that functionality off if something goes wrong.
+* Cache and autoscaling are not one-size-fits-all solutions for performance problems - learn to use them wisely.
+* You're going to become extremely familiar with logs, charts and graphs.
+* Don't DDoS yourself
+* Automate setup of your local and production environments.
+* Use a tool that allows for fast DNS updates.
+* Continuously and automatically produce shippable build artifacts from your codebase.
+* Deploy seamlessly, using blue/green or gradual deploys.
+* Have your servers die and reboot quickly rather than letting them get into weird states.
+* Accept that you'll ship production-breaking bugs and embrace strategies that allow you to quickly identify and roll back to known good system states.
+* Don't let a single server failure take down production.
+* Test that you can peform a full restore from your backups.
+* Use a CDN, not just for DDoS protection but also for lightning fast content delivery
+* Be a full stack engineer, or specialize, or do both. Your career is in your own hands! 
+* Take advantage of your work's chat client, it's a central communications hub for a reason.
+* Don't get shitty when things go pear-shaped. It's a bad time for everyone and there's no better time to be patient and compassionate, even if you're white-knuckling a full tumbler of cheap whiskey.
+* Uncontrolled autoscaling can cost you an arm and a leg, and can be fired by bugs that would otherwise trigger production outages. Watch it carefully and set limits on everything.
+* Horizontal scaling, autoscaling, and infinitely-scaling managed services will scale up as big as your budget will allow, but do not underestimate the power of one great big goddamned server.
+
+That's it! That's all the tips! 
+
+Thanks so much for listening to me!
+
