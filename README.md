@@ -1480,13 +1480,13 @@ Wow. You... listened to for a _really_ long time.
 
 Let's summarize some of the takeaways of our talk:
 
-* Understand your language's concurrency model and how it affects your scale-up plan
-* Choose your databases with an understanding of how they're going to manage replication
+* Understand your language's concurrency model and how it affects your scale-up plan.
+* Choose your databases with an understanding of how they're going to manage replication.
 * There are lots of task-specific backend services, and you'll probably need a few of them.
-* Configure your application by passing URLs to backend services through environment variables
-* Store passwords in a slow, secure password hash designed explicitly for the task of storing passwords
-* Don't try to send your own emails, you need to use a service for that
-* Use HTTPS.
+* Configure your application by passing URLs to backend services through environment variables.
+* Store passwords using a slow, secure password hash designed explicitly for the task of hashing passwords.
+* Don't try to send your own emails, you need to use a service for that.
+* Use HTTPS. There's not an authentication model out there that can't be rendered insecure by trying to run it over HTTP. Encrypted transit by default makes a lot of authentication schemes work. 
 * Rate limit everything, especially authentication.
 * Make sure to provide password recovery options for your users.
 * Set up a CAPTCHA to discourage bots.
