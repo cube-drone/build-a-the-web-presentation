@@ -11,7 +11,7 @@ That's what we're here to talk about!
 ## Fast
 We are going to be going through this very quickly. 
 
-This is out of necessity - the last time I tried to put something like this together I------ got stuck on character encoding and Unicode for like 8 entire pages. [Not lying, the proof is here](http://buildatheweb.cube-drone.com/#).
+This is out of necessity - the last time I tried to put something like this together I------ got stuck on character encoding and Unicode for like 8 entire pages. ( [The proof is here, peruse at your own risk](http://buildatheweb.cube-drone.com/#).)
 
 Character encoding is really neat, and someday I hope to turn those pages into a totally separate presentation, but there's no way we're going to make it through everything if I don't trim some details so that we can make it through this in less than 100,000 years. 
 
@@ -25,7 +25,7 @@ _put a table of contents here maybe?__
 
 # Act I: Dev
 
-## Client & Server
+## Client & Server: The Absolute Most Basic of Basics
 The first thing to talk about is what a web application looks like. 
 
 * You have a browser. 
@@ -101,7 +101,7 @@ Here are some things we won't be talking about:
 These are just... programs that you give to people. There's no client, there's no server, you give them a program and they run it. 
 
 #### P2P
-More and more of the internet is running off of peer-to-peer protocols - bittorrent,  Tor, IPFS, Dat, and the very stupid world of blockchain are all capable of running entirely without a server - applications built using these protocols are incredibly powerful and increasing in popularity - but the model for developing them is significantly more complicated than the one for traditional client-server architectures. 
+More and more of the internet is running off of peer-to-peer protocols - bittorrent, Tor, IPFS, Dat, and the very stupid world of blockchain are all capable of running entirely without a server - applications built using these protocols are incredibly powerful and increasing in popularity - but the model for developing them is significantly more complicated than the one for traditional client-server architectures. 
 
 #### Play by Mail
 It's possible to run the entire client/server communications network over mail, or - if you prefer- carrier pigeon. If you use a carrier pigeon to send me some mail with a HTTP request on it, I could easily respond with some more mail containing a HTTP response - however, this system is almost untenably slow and poop-laden, so we're going to leave it out for the sake of time.
