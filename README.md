@@ -418,15 +418,17 @@ Okay, I need to talk about normalization a little.
 
 Just to introduce the topic, let's imagine we have a table with some users in it:
 
-| id | user  | country | ip            | type  | perms  |
-|----|-------|---------|---------------|-------|--------|
-| 1  | dave  | USA     | 203.22.44.55  | admin | write  |
-| 2  | chuck | CA      | 112.132.10.10 | admin | write  |
-| 3  | biff  | USA     | 203.22.44.55  | norm  | read   |
+| id | user  | country | ip            | type     | perms  |
+|----|-------|---------|---------------|----------|--------|
+| 1  | dave  | USA     | 203.22.44.55  | admin    | write  |
+| 2  | chuck | CA      | 112.132.10.10 | admin    | write  |
+| 3  | biff  | USA     | 203.22.44.55  | regular  | read   |
+
+This table has an id, uniquely identifying the user, a username, a country code, an IP address, a user type, and user permissions.
 
 Maybe you're looking at this and thinking: hey, this table has some problems.
 
-Like - if all admins have "write" perms, and all norms just have "read" perms, why not separate out the admin stuff into its own table. We can just store the ID of the rows we're referencing. 
+Like - if all admins have "write" permissions, and all regular users just have "read" permissions, why not separate out the admin stuff into its own table. We can just store the ID of the rows we're referencing. 
 
 | id | user  | country | ip            | type_id  |
 |----|-------|---------|---------------|----------|
@@ -439,11 +441,11 @@ Like - if all admins have "write" perms, and all norms just have "read" perms, w
 | 1  | admin      | write   |
 | 2  | normal     | read    |
 
-Look, we did a normalization! Now if we want to update our admin permissions, we only have to make that write one place, instead of hundreds of times across our entire table. 
+Look, we did a normalization! Now if we want to update our admin permissions, or change a type, or add a new type, we only have to make that write one place, instead of hundreds of times across our entire table. 
 
 And the only expense was that we made our read a little more complicated - now we have to join data across two tables when we read, rather than just the one table.
 
-Awesome! But... we can go further. Let's normalize harder.
+Awesome! But... we can go further. Let's normalize harder. We can split out the country, and the IP data, too.
 
 | id | user  | country_id | type_id  |
 |----|-------|------------|----------|
