@@ -23,6 +23,8 @@ Character encoding is really neat, and someday I hope to turn those pages into a
 
 Here, I'm going to pop up the Table of Contents so you have an idea what we're going to cover - and we are going to go fast. 
 
+_put a table of contents here maybe?__
+
 ----
 
 # Act I: Dev
