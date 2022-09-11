@@ -310,7 +310,7 @@ There are potentially countless different ways to do RPC over HTTP - more scheme
 Let's talk about a few schemes: 
 
 #### XML-RPC and SOAP
-These were early standards for doing RPC calls over HTTP. They used a lot of XML rather than JSON, and tended to be very popular with Java programmers, which made them very unpopular with everyone else. We ... don't talk about them. 
+These were early standards for doing RPC calls over HTTP. They used a lot of XML rather than JSON, and tended to be very popular with Java programmers, which made them very unpopular with everyone else. We ... don't talk about them much anymore.
 
 #### REST (FIOH)
 REST stands for "Representational State Transfer", and if you spend any time looking into the philosophies of Representational State Transfer you will be overwhelmed with a sudden desire to throw yourself into traffic. The ideas of Representational State Transfer don't actually map to API design, at all, really. REST is a philosophy about how hypermedia should work, so, if you're designing a new HTML, you should read about REST - but you're not designing a new HTML, because we already have HTML. Which is doing fine.
@@ -319,7 +319,7 @@ The name REST is all wrong if you're using it to describe doing RPC over HTTP, i
 
 **"Fuck it, Overload HTTP".**
 
-I've stolen this term from a [very good blog post](https://twobithistory.org/2020/06/28/rest.html) . 
+I've stolen this term from a [very good blog post](https://twobithistory.org/2020/06/28/rest.html) . (Which I've linked below)
 
 The way that Fuck it, Overload HTTP works, is that you just map all of your HTTP paths to different things your system can do.
 
@@ -337,17 +337,17 @@ So, some folks at Facebook built GraphQL, which is a whole query language that y
 I don't really have a lot of thoughts about GraphQL. If you need to write an API that's capable of processing really complicated queries, maybe it's the right tool for you!
 
 #### WebSockets
-This is something that Single Page Applications can do that classic websites definitely can't: it can open a WebSocket against the backend server. 
+This is something that Single Page Applications can do that classic websites definitely can't: they can open a WebSocket against the backend server. 
 
 Unlike HTTP request/response, where every interaction with the server is going to involve a request and response, a WebSocket is a full bidirectional communication pathway between the client and server - the connection stays open, and either side of the transaction can send messages whenever they want.
 
 This is most useful when programming real time systems - chat clients, for example. Building a chat client using request response would require that your client application regularly poll the server - do you have any new information for me yet? What about now? What about now? Using a websocket, the server can wait, and push messages to the client when it actually has something to send. 
 
-There are drawbacks to this, though - maintaining a WebSocket connection on the server side is much more heavyweight than just holding on to. 
+There are drawbacks to this, though - maintaining a WebSocket connection on the server side is much more heavyweight than just responding to simple http requests. 
 
 On top of that, remember our shared-nothing process scaling model? This significantly complicates that, because our websocket connection represents a permanent connection to a server. The socket needs to stay connected to the same process each time it connects to your backend, and that process needs to be able to simultaneously manage connections to hundreds of different clients. 
 
-This is really hard without services that can manage some concurrency - these guys. So, socket-heavy architectures tend towards more consolidation and more concurrency - larger servers, using threads and shared memory - which is why backends in node, Elixir and Rust are often popular for real-time systems.
+This is really hard without services that can manage some concurrency - you know, these guys (node, elixir, rust, C++, etc). So, socket-heavy architectures tend towards more consolidation and more concurrency - larger servers, using threads and shared memory - which is why backends in Elixir or Rust are often popular for real-time systems.
 
 #### WebRTC
 Another way for Single Page Applications to communicate is with WebRTC - or Web Real-Time-Communication, a protocol that allows clients to communicate amongst themselves in a peer-2-peer fashion, useful for exchanging high speed audio and video data. 
@@ -360,7 +360,7 @@ At least, for now, the dominant way to do things is REST - or, FIOH, if you'd pr
 ### MVC
 Okay, jumping back to our web framework - one of the things that many web frameworks provide is a recommended structure for your codebase. 
 
-Django and Rails, for example, are built around Model-View-Controller architectures, where your code is divided into a 
+Django and Rails, for example, are built around Model-View-Controller architectures, where your code is divided into 
 * Models, responsible for mapping database tables to application objects
 * Views, responsible for mapping application objects to HTML using templates, and 
 * Controllers, which are the parts that actually handle the request/response, and tie Models and Views together to build the application's functionality
@@ -374,7 +374,7 @@ A very common concept in web frameworks is the idea of "middleware" - once you b
 -----
 
 ## Backing Services
-And now we need to talk about some of the backing service you are almost certainly going to need to connect to, to turn your application into an application. 
+And now we need to talk about some of the backing services you are almost certainly going to need to connect to, to turn your application into an application. 
 
 ### The Database
 The beating heart of every modern web application is some kind of database. 
@@ -386,7 +386,7 @@ Most commercial databases have a built-in authentication system. This authentica
 
 If people want to log in to your website, they'll be interacting with auth code that you wrote. Database Auth controls who is allowed to connect to the database and what they are allowed to do - so, pretty much, just your application, and you. 
 
-Some databases don't ship with any authentication at all - or, authentication is turned off by default. Everybody who can find the database on the network can do whatever they want with it. It's really important that - if you make a database accessible on a public network, you must authenticate access to it. Again, this feels so obvious that I'm embarrassed to say it, but, every year there are reports of hackers just cruising in to un-secured systems with real production data on them.
+Some databases don't ship with any authentication at all - or, authentication is turned off by default. Everybody who can find the database on the network can do whatever they want with it. It's really important that - if you make a database accessible on a public network, you must authenticate access to it. Again, this feels so obvious that I'm embarrassed to say it, but, every year there are reports of hackers just cruising in to completely open systems with real production data on them.
 
 #### Database Protocols
 The way that you connect to your database is rarely simple HTTP requests. Instead, databases usually interact via some protocol of their own design - very often a binary protocol rather than a plaintext one. 
