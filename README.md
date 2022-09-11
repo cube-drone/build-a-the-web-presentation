@@ -11,7 +11,7 @@ That's what we're here to talk about!
 ## Fast
 We are going to be going through this very quickly. 
 
-This is out of necessity - the last time I tried to put something like this together I------ got stuck on character encoding and Unicode for like 8 entire pages. 
+This is out of necessity - the last time I tried to put something like this together I------ got stuck on character encoding and Unicode for like 8 entire pages. [Not lying, the proof is here](http://buildatheweb.cube-drone.com/#).
 
 Character encoding is really neat, and someday I hope to turn those pages into a totally separate presentation, but there's no way we're going to make it through everything if I don't trim some details so that we can make it through this in less than 100,000 years. 
 
