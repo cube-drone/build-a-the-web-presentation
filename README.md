@@ -1225,7 +1225,7 @@ If you have VC cash, or you're a well-established company with money to burn and
 Does that make me sad? Yes. 
 Does that stop me from running the entirety of my day-job out of AWS? No. 
 
-It turns out that the most valuable development tool in 2022 isn't a code editor or a database product - it's a credit card.
+It turns out that the most valuable development tool at the time of writing isn't a code editor or a database product - it's a credit card.
 
 ### Kubernetes
 Well, if clouds are so great, why not an open-source cloud that you can manage yourself? 
@@ -1250,44 +1250,171 @@ I'm reluctant to admit it, but I'm much more experienced with Ansible than I am 
 -----
 
 ## Dev and Prod
+A common way to develop software is to have two deployment environments - a production environment, which is the actual live product, and a development environment, which is considered to be "prod-like, but smaller"
 
-## Automated Testing
+Dev is intended to be a more malleable test environment for faster iteration on new features - it can also a good environment to manually QA new features before they ship.
 
-## Separate Build and Deploy Steps
+As I get older I'm becoming less and less convinced about the utility of a dev environment - when a lot of what it accomplishes could be buried behind feature flags or client UI branches in prod, instead, but ours keeps getting used for one thing or another, so, I guess it's still a useful thing to have.
+
+## Separate Build and Deploy Steps // Continuous Integration
+Every time the code is updated, a new master build candidate should be built for production, and the entire test suite should be run to make sure that everything is still working as intended.
+
+Tools for this are varied and manifold - from the venerable and somewhat crusty Jenkins to the newly released Github Actions, there are loads of ways to do this.
+
+Once the build is complete, if that build was for your master branch, the result should also be pretty much immediately deployed. 
+
+Leaving un-deployed code in master is a great way to set yourself up, down the road, for a deploy that fails badly with, like, five or six complicated new features in it. You won't know which of those five or six complicated new features caused prod issues, and you don't want to redeploy to try to find out. If you just keep deploying every time you put anything in master, you'll always know that: if something starts to throw alarm bells in production, it was definitely the last thing that you changed, because that was the only thing that you changed. 
+
+I, for one, like to have a separate build and deploy - even if every build against master should be immediately deployed, I like it when there's a concrete deploy _moment_ where you decide that it's time for master to go to production and Press The Deploy Button - and it can be useful to be able to deploy any build artifact to prod - even builds from the past or branch builds. That's _controversial_, though, a lot of people believe that every push to prod should just immediately build and then automatically and immediately deploy, and I think those people are _also probably right_.
 
 ### Containers
+The most stupendously common way to deliver your web application in a tidy little self-contained package - at least, at the time of writing - is to have your build artifact be a fully constructed container. This is an executable virtual operating system that runs not just your application but also all of its dependencies.
 
-### Supervision
+A container is like a virtual machine image.
 
-## Continuous Integration
+And- like virtual machine images - containers are completely independent operating system environments. However, virtual machines are run - like any other software - on top of the base operating system - which carries a performance penalty, even if it's increasingly small as virtualization technology gets better and better. Powerful virtualization technology is what allows us to have those VPS based server solutions I mentioned earlier.
+
+Containers are different - they are based on a linux technology that allows them to sort of temporarily switch places with the host operating system, running their container operating system fully separate from the base operating system. The performance compared to virtual machines is superior, _but_ this technology only really operates within the linux ecosystem; running containers on Windows has to start with running a virtual linux, or it won't work.
+
+The benefits of shipping build artifacts as containers is that they're very easy to run: any environment that can run containers will be able to run your container, and it will run exactly the same way there as on your computer. There's no dependency management: all of your dependencies are also shipped within the container. The operating systems you're running are usually stripped down to the barest essentials, so there's not a lot of surface for attackers - and even if they're successful at breaking in to your application, they're trapped in container jail, with extremely limited access to the outer operating system. 
+
+The problem with shipping build artifacts as containers is that they're kinda too big: because a container contains the entire operating system it's intending to run on, even stripped-down, minimalistic containers generally run in the hundreds of megabytes - which means if you're doing 10 builds a day, you're generating a gigabyte a day of build artifact. That can add up, although, storage is so cheap nowadays that it's not a huge concern. 
+
+## Supervision
+When you launch your application in the cloud, you... don't want it to turn off. In the even of a serious error, or even a reboot of the server that the application is running on - it doesn't matter what causes your system to stop running, you want it to try to restart itself. 
+
+In order to make sure that your system stays on, your application, when live, is paired up with a supervisor - a separate application that boots up with the server, and makes sure that your software is always, always running.
+
+In the past, you might use something like `supervisord`  for this, or using the operating systems' built in `systemd`. That's less and less necessary nowadays because most containerization systems also function as supervisors for their containers - so if you have a `chunkyboy-app` container, you can instruct your container application to reboot `chunkyboy-app` if its main process ever dies for any reason. 
+
+The combination of supervision and shared-nothing in architectures is really powerful: your servers can respond to just about any serious error by simply pooping out a bunch of diagnostic information, then dying. They'll reboot themselves quickly and be back up and running in seconds. SELF HEALING ARCHITECTURE! 
 
 ## Seamless Operations
+It should go without saying, but, one of the big goals of your deploy process should be to make it totally invisible to users, and so easy for your development team that they have no qualms about deploying several times per day. 
 
+There are a lot of jokes out there about not doing big deploys on Friday - because if they go wrong, you're stuck debugging them on what was supposed to be, your weekend. I think, though, that that kind of cowardice should be met with a bit of healthy skepticism: if your systems aren't healthy enough for you to be confident to deploy on a Friday night, your systems aren't really that healthy at all. 
+
+There are a few different major philosophies that can be used to improve your ability to deploy with confidence:
+
+### Just Don't Ship Bugs
+Obviously, the best way to deploy code without having to worry about it is simply to deploy perfect code. If you don't write any bugs, or you catch them all before deployment with very careful QA, then rollouts are totally risk free. 
+
+You write everything in Rust to rule out type errors, and every line of code you write goes through intensive unit testing, integration testing, load testing, weeks of QA, a closed beta period, an open beta period, and down-to-the-individual line PR scrutiny from other developers on your team. Getting even simple features into production takes months of careful negotiation. 
+
+You're not just QA-ing one feature at a time, now - releases take so long to get through the process that they're starting to get big. Now you're not just QAing and shipping one feature, you're QA-ing and shipping 10 at the same time, and you're not checking on them individually, you're testing them as a unit.
+
+And then... somehow, you ship a bug anyways. Prod goes down, you have no backup plan, and everyone gets fired - in no small part because your incredibly slow development process is lagging way behind the assholes like me who just deploy experimental code whenever we feel like it and have a plan to deal with the consequences of shipping imperfect code, rather than a plan to ship perfect code, which is, almost impossible. 
+
+### Blue/Green Deployments
+In blue/green deployment systems, you maintain two full clusters - essentially, two entire copies of your entire web stack, each in a separate "bank" of servers. They can either share access to common databases or have the databases replicated across either bank. 
+
+When deploying, you take the bank that's not currently active and roll out your entire deployment. This can happen without anybody noticing the change, because the bank is completely inactive.
+
+Then, you can poke your bank to make sure that everything is running smoothly, and then cut over traffic from your active bank to your inactive bank. The cut-over can be as quick or smooth as you want. 
+
+Watching error rates and the important charts and graphs across your backend, if something starts to go very wrong, you can panic, and cut immediately back to your last version of the code - which you know, should be stable, it's been in production for a while. 
+
+There's a lot to guard against cutting over to an invalid state here - if your servers won't boot up, you just never cut over to them.
+
+This ability to immediately rollback to a safe, validated state can help you be bolder about trying things in production - worst case scenario, there is always a kill-switch you can pull if things start to go pear-shaped. 
+
+That being said - if your new code does something really dumb like knock over a database server - or, if you deploy a bunch of times, very quickly, over-top some code that takes hours to fail badly, it's still possible for you to get production into a difficult to recover state. 
+
+### Graduated Deployments
+
+A modern technique, popular with the elastic and kubernetes crowd, is to deploy code a little bit at a time: let's say you have 100 servers that you're deploying to. Maybe we swap out the containers of the first 10 servers, check if there are any serious errors, and if everything looks good, we swap out the next 10 servers, and so on, until we've completely moved over to our new code. 
+
+This is more efficient than the blue/green solution: you only have one bank and you're just moving things over bit-by-bit, and checking as you go to make sure that error rates aren't spiking. 
+
+This can also somewhat rob you of your instant rollback - because rollout is gradual, and you clear out the containers you're not using when you're done, the only way to rollback after you've deployed is to re-deploy using the older code. Still - though - if your deploy is relatively quick it shouldn't be too onerous to wait for this.
+
+### Which Technique to Use
+The techniques of "Just Don't Ship Bugs" - I made fun of them, but you should still do a lot of those things - there are lots of times when they're useful - you really should do what you can not to ship bugs. Especially in financial or health-care systems, where bugs could cost people their lives or livelihoods, it's important to take quality control very seriously and, as a result, slow down your pace of development in order to do it responsibly - however, it's just as important to be aware of the ways that they slow down your development process and use them sparingly so as not to kill your throughput. 
+
+*Nobody*, not even NASA, ships perfect software, and trying to do so while neglecting your ability to detect that you've shipped imperfect software is a mistake. Slowing down your development process to ensure perfection also slows down your ability to discover and adapt to errors and fix them quickly. A company that ships every day is a company that can ship something broken, and discover how it's broken, and get it fixed _faster_ than a company that waits months to deliver that same functionality. 
+
+The other techniques of seamless operations we talked about focus instead on using your ops toolkit to be able to diagnose problems live, as they're happening - using your users and your production environment as live QA.  This is better for systems where failures can be easily caught by ops tooling. If your failures can be seen on graphs, then you can use these techniques to catch and remediate those failures very quickly. 
+
+These ... techniques are intended for web products - they don't work as well if the consequences of shipping bugs is very high - older video games, in particular, had to get everything right before they mastered their product on to permanent DVDs that went to everyone's homes. If Final Fantasy 6 shipped with a bug (and it did), that bug wasn't going anywhere. On the other hand, a web product can swap the code you're interacting with dozens of times an hour, and you may never notice. 
+
+Blue/Green is conceptually very simple, and much easier to write on your own - if you are piecing together your own infrastructure, I'd recomment blue/green because it's is something that you can build, very easily. The redundancy it offers, and the instant rollback are both very worthwhile. 
+
+On the other hand, if you are using a control plane like Elastic Container Service or Kubernetes, graduated rollout is often built right in to the platform - building Blue/Green is actually much harder in these systems because they don't expect you to use them that way. 
 
 ## Redundancy and Single Points of Failure
+Look at your architecture diagram. Are there any parts of it where there's just one server and if that server goes down you're completely boned? 
+
+That server is a SPOF, a single-point-of-failure, and when you're laying out your systems it is your responsibility to try your very best to make sure that that server doesn't exist. Servers disappear all of the time. 
+
+Databases can use replication and election to swap to secondary servers if their primaries disappear. Load balancers can be set up in parallel, and balance to many different servers, so there's no individual server that can cause your product to go down. 
+
+Taken to its extremes, this philosophy can also apply to entire data centers, or your organization. Is there any region of the united states that could disappear, taking your entire business with it? Hurricanes happen more often than you'd think. 
+
+Is there any employee of your company who could be hit a bus by surprise, taking your entire business offline because they're the only one who knew the password to unlock your front doors? 
+
+You can even test out your redunancy by randomly turning off servers and hitting your employees with buses, to see what happens. (You can also accomplish this somewhat with a generous vacation strategy, although that's less fun)
 
 ## Backups
+Of course you have backups of everything. Even with all of your resiliency plans, your servers can still be hit a comet. 
 
+Every once in a while you should recreate your entire production environment from scratch, using nothing but backups and your infrastructure code. In fact- this is a good way to get an up-to-date dev environment, so long as you anonymize or delete your user data before using it in dev. 
 
 ## Secrets Management
+As your web service and all of its backing services grow, the set of secrets - critical passwords and the like - that you need access to in order to deploy these services to production grows and grows. 
+
+Where do you keep all of this information? Well, the answer is: as securely as possible. If it's on a post-it-note stuck to your fridge, that's probably bad. While you're small, just keeping them in encrypted storage, accessible to only a few members of your team is probably sufficient. As you grow, you'll probably move towards a secrets manager, like Hashicorp Vault or AWS Secrets Manager, where you have more granular control of who and what has access to those encrypted secrets. 
 
 ## Rate Limiting
 Moving from software as a service to video games has been a bit of a culture shock for me. You have to be very well-established as a business to see even an tiny fraction of the level of casual abuse that video game servers (and employees) get from their users. 
 
-## Content Delivery Networks 
+All services need security and hardening against all manner of attacks, mind you - there are baddies out there targeting just about everyone. Working in video games, though, gave me a harder education, faster, than anywhere else I've worked. 
 
-## Distributed Denial of Service
+One of the quick things that you'll learn is that you cannot have any interface to your application that is not rate limited in some way.  Even if the rate is set to something that seems insanely high, you need that rate limit in place because someone will attempt to hit that endpoint ten million times per second.
 
+Rate limiting can be provided within your application, or by your load balancer - basically any proxy in between your application and the internet can be configured to provide some level of rate limiting - however, there are different levels of rate limiting that you'll need to consider. 
 
-# Act III: Forever
+Rate limiting simple requests at the HTTP level is a good start - but you'll also need to consider application-level limiting of any resource that you give the user access to: someone will find a way to use way, way too much of that resource. If you have user-actions that can trigger emails, or messages to other users, or any slow-running process? Rate limit. 
 
-## Alerting
+## Distributed Denial of Service & Content Delivery Networks
 
-## Admin 
+The first time I got hit by a Distributed Denial of Service attack was two weeks after the public launch of the game that I work on - we had less than 100 concurrent users at the time, but that was enough for one of them to have some beef with us.
+
+Our provider at the time - I don't want to say their name, that could embarass them, but it rhymes with Migital Mocean - their DDoS prevention strategy is to find the customer that's getting attacked, and disconnect them from the internet. This protects _their other customers_.
+
+So, if you don't want to get laser-beamed off of the internet, you'll need some kind of DDoS protection. The way that DDoS protection works is kind of - like a DDoS protection racket - a whole bunch of companies get together and fund an absolute buttload of server resources that proxy connections to all of their services. They may be able to knock over one of us, but they can't knock over all of us. It's Distributed Denial of Denial of Service. 
+
+The thing is - the tools that you use to bounce DDoS attacks- a globe-spanning network of proxy servers - that's also a content delivery network. If your services and files are cached in locations around the world, access to that cache is very very fast, no matter where you are. It does dual-duty, facetanking bulk attacks and also just making your cached assets very very fast to load.
+
+## DevOps
+You'll hear the term "DevOps" a lot. 
+
+It used to be that the skillset required to develop software and the skillset required to run that software on linux were two distinct specialties - with operators treated with a lot less valor than developers. Which sucked. 
+
+Modern ops, though, has grown in complexity, and a lot of developing startups run so much of their ops with complicated tooling and Infrastructure-as-Code that the job of ops is very much like the job of a dev. On top of that, developers, when writing their software, should be keeping the needs of ops in mind. It makes a lot of sense to just have the backend team do _both_ - they write the software and they operate the software. Dev... Ops. DevOps. 
+
+If you combine Dev, Ops, and Frontend knowledge into one unfortunate subject you end up with the rare "Full Stack Developer", a mythical beast that mostly only exists because most startups can't afford to hire three separate subject matter experts. 
+
+Even as something of a Full Stack Developer myself, I have to point out that being a little bit good at a lot of things is more valuable in a small company where there are more jobs than people to do them, and it grows steadily less valuable as you start to grow large enough to have a person who's just really, really good at, like, _data science_, or _iOS programming_, or _shaders_. 
+
+The idea that everybody at your company should be able to do everything all the time is maybe a bit naive - sometimes people are better at things than others. Specialization may be for insects, but it's also for companies. 
 
 ## ChatOps
+Chat tools like Slack, Discord, and Microsoft Teams - and their open-source alternatives like IRC and Matrix - are becoming de-facto communications standards for coordinating teams. I can't imagine a modern tech company _not_ coalescing around a chat client. 
 
-## Post Mortems
+Which makes that chat client a really obvious point of coordination for ops stuff. Automatic ops alerts, charts, graphs, deployment information, dump it all in your chat! Gonna change something in prod? Mention it in chat! If things are neatly divided into channels you have the ability to opt in and out of stuff as you like, it's great. 
+
+One thing to be a little extra aware of is how easily bot chatter can render a chat channel completely unusable for human communication. You'll either want to sequester automatic updates into their own channels or tune their output to fire only when it's important for humans to see.
+
+It's also pretty useful to have a dedicated high-alert channel where you only post if something has gone extremely wrong. If you see pings coming in for you on #red-alert you know it's time to get to a terminal. 
+
+## Post Mortems and a Culture of Blameless Ops
+Do you know what's worse than prod going down?
+
+Prod going down and the person who knows exactly why prod went down doing everything they can to conceal that from the team, because they're worried about people learning what they've done and possibly getting fired.
+
+But what they've done isn't just "bringing down prod", they've unveiled an exciting new way to make prod more resilient going forward. 
+
+After outages, you'll need to compile a report to determine exactly what happened and what your plan is to prevent that from happening again in the future, and then you're going to have to implement that plan - finding people to point fingers at accomplishes exactly none of that. 
 
 ## Scaling
 
