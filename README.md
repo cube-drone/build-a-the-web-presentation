@@ -1416,11 +1416,31 @@ But what they've done isn't just "bringing down prod", they've unveiled an excit
 
 After outages, you'll need to compile a report to determine exactly what happened and what your plan is to prevent that from happening again in the future, and then you're going to have to implement that plan - finding people to point fingers at accomplishes exactly none of that. 
 
-## Scaling
+## Autoscaling, Infinite Scale, and Cost Control
+With tools like ECS and Kubernetes it's possible to have parts of your stack that scale up automatically when certain parameters, like CPU, start to spike heavily on your servers.
 
-## Cost Control
+With other cloud tools, like S3 or automatically scaling load balancers, they will simply expand to fill all load automatically.
 
-## Security
-* Principle of Least Access
-* Zero-Trust
+That's wondeful, right? Well, to a point.
 
+Scaling up is only the solution to a production problem, like, half of the time - and the presence of infinite resources gives your systems a lot of leeway to accidentally start using all of those resources. 
+
+Say, for example, you accidentally have a loop in your job system that re-introduces completed jobs into the stack, or an error that never lets jobs complete - the job queue will fill up, possibly your autoscaling will create more workers to try to deal with all of the jobs, and that won't fix anything, so the queue will fill up more, faster, and so you'll scale up even more. 
+
+Infinite scaling also gives you all of the rope you need to hang yourself with infinitely large bills, if you aren't careful about setting tight boundaries around how large your system is allowed to scale. 
+
+## The Enduring Utility of Vertical Scaling
+A lot of what we've talked about when it comes to scaling focuses on flexibility, replication, horizontal scaling, and infinitely scalable backing services - _but_ - it's important to remember that you are not Google. 
+
+Servers got really, really powerful. It's not unreasonable to be able to set up a server with 128 CPUs and a terabyte of RAM. That's enough power for an entire mid-sized company - easily enough to handle your first million customers. 
+
+A lot of the orthodoxy about how to super-scale up comes from companies that have had to scale to enormous, world-spanning sizes - and - they've done that over decades, with huge teams of engineers - while it's useful to know some details of how they managed to do that, and how you might do the same - vertical scaling - simply moving to bigger and bigger computers - will serve you for way longer than you'd imagine.
+
+## Conclusion
+
+Wow. You... listened to for a _really_ long time. 
+
+* Understand your concurrency model and how it affects your scale-up plan
+* Choose your databases with an understanding of how they're going to manage replication
+* There are lots of task-specific backend services, and you'll probably need a few of them.
+* 
