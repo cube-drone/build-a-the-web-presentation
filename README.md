@@ -17,9 +17,13 @@ Character encoding is really neat, and someday I hope to turn those pages into a
 
 Based on the word count and my average elocution speed, I'm estimating that just working through the whole essay is going to take me about two and half hours. And I speak.. relatively quickly. 
 
-Here, I'm going to pop up the Table of Contents so you have an idea what we're going to cover - and we are going to go fast. 
+Here, I'm going to pop up the Table of Contents so you have an idea what we're going to cover.
 
 _put a table of contents here maybe?__
+
+_Improv about ToC a bit.__
+
+We are going to go fast. 
 
 ----
 
@@ -50,25 +54,25 @@ HTTP, the Hypertext Transfer Protocol, is all just a bunch of fancy stuff that s
 
 _put a diagram here, dummy_
 
-* Protocol (http, or https - or redis, or postgres, or gopher, or...)
+* Protocol (http, or https - this doesn't have to be http - a url can identify a resource that you connect to with all sorts of different protocols - redis, or postgres, or gopher, or... whatever)
 * Hostname (and port, if necessary)
 * Path & Query
 
-This divides pretty nicely into "the server we plan to connect to", "the language we intend to speak to it", and "the thing we want that server to do for us"
+This divides pretty nicely into "the server we plan to connect to", "the language we intend to speak to it", and "the thing we want that server to get for us"
 
 #### GET & POST and some more esoteric codes
 There are two primary kinds of message you'll send to the server - GETs and POSTs. When you GET a path, you're saying to the server- whatever is there, go get it for me. When you POST to a path, you're saying - here, server, I have something, take it and put it at the path I gave you. 
 
-For example, imagine a theoretical comments section - you might GET `/blogpost/1234/comments` , and then send a POST to `/blogpost/1234/comments` containing some structured data that it would then add as a comment. 
+For example, imagine a theoretical comments section - you might GET `/blog/1234/comments` , which the server would respond to with all of the comments for a specific blog entry - and then you might send a POST to `/blogpost/1234/comments` containing some structured data that it would then add as a comment. 
 
-GET and POST are the important ones - GETs are for getting data, POSTS are for changing data, and that's all you really need to know. There are some more esoteric ones, like DELETE, and PUT, and HEAD, and PATCH, but you mostly don't need to use them.
+GET and POST are the important ones - GETs are for getting data, POSTS are for changing data, and that's all you really need to know. There are some more esoteric ones, like DELETE, and PUT, and HEAD, and PATCH, but you mostly don't need to use them. We will talk a little bit more about those later.
 
 #### Headers 
 Your GET or POST request don't travel alone - they can also bring a bunch of metadata with them. This metadata comes in key/value pairs called "Headers". 
 
-Here are some of the HTTP headers that are included with a request to a website
+Here are some of the HTTP headers that are included with a request to a website.
 
-Here are some of the Headers that that same header include as a response.
+Here are some of the Headers that are sent back from the server in our HTTP response.
 
 #### Cookies
 Cookies are also a kind of header - they're a bit of extra data that you can include with a request to a website. 
@@ -77,16 +81,16 @@ The server can also, when it responds to you, ask you to hold on to a little bit
 
 "hey, for the next week, every time you send me a request, could you also send me this fourteen digit number?"
 
-That turns out to be wildly useful for authentication, which we'll talk more about later! 
+That turns out to be wildly useful for authentication, which we'll talk more about soon! 
 
 #### Status Codes
 Every HTTP response comes with not just text, but also a three digit number indicating how well the request went.
 
-200 is the number that meant "everything went okay". Numbers in the 300 range mean "your data is somewhere else", Numbers in the 400 range means "you screwed up somehow", and numbers in the 500 range mean that the server that you've connected to has managed to light itself on fire somehow. 
+200 is the number that means "everything went okay". Numbers in the 300 range mean "your data is somewhere else", Numbers in the 400 range mean "you screwed up somehow", and numbers in the 500 range mean that the server that you've connected to has managed to light itself on fire somehow. 
 
 So, for example, 301 - that's "moved permanently" - whatever you expected to find at this path, it actually lives somewhere else, and the response will tell you where to look. Your browser will helpfully follow this trail automatically.
 
-That also means, you can set a 301 pointing to another 301, in hopes that your browser will follow that chain forever - but most unfortunately, most modern browsers won't fall for that and will stop following redirects after a while and simply give up. 
+That also means, you can set a 301 pointing to another 301, pointing back to the original 301, in hopes that your user's browser will follow that chain forever, trapping your end user in a hell from which there is no escape - but most unfortunately, most modern browsers won't fall for that and will stop following redirects after a while and simply give up. 
 
 404 - that's "not found" - it means you screwed up, because you asked for something that just isn't there.
 
@@ -137,29 +141,31 @@ One of the the first questions that you'll probably come to when building a web 
 If you're learning everything from the ground up? The answer is probably Python or Javascript.
 
 ### Concurrency Model
-The reason that your choice of language matters so much is because different languages have very different models when it comes to managing concurrency.  Now, when it comes to web applications, concurrency is non-optional. Imagine if, for example, a web server could only deal with one person at a time. It would be slow. 
+The reason that your choice of language matters so much is because different languages have very different models when it comes to managing concurrency.  
+
+When it comes to web applications, concurrency is non-optional. Imagine if, for example, a web server could only deal with one person at a time. It would be slow. 
 
 Handling concurrency is also _really complicated_ - enough so that the concurrency model you choose effects every decision you make afterwards. It's a big deal. 
 
 #### Remember, You're Not Writing A Database
-Before we go into this section, I want to make a big big caveat.
+There's a common misconception when it comes to programming languages - the best one is the one that's fastest, right?
 
-The wrong decision here isn't picking something that's too slow. 
+Well, not necessarily.
 
-It's possible to write web applications in pretty much whatever language you like. The speed of your web application server isn't going to be your first scaling hurdle - and even PHP will cheerfully run a website for your first 10,000 users no problem.
+It's possible to write web applications in pretty much whatever language you like. The speed of your web application server isn't going to be your first scaling hurdle - and even PHP will cheerfully run a website for your first 10,000 users, no problem.
 
 Static languages, dynamic languages, they're both fine. Some people like type systems, some people don't, I've definitely seen some pretty compelling evidence that they don't affect your productivity too much either way. 
 
 I'm pretty sure that most languages have fairly sane package management at this point - a good package manager where you can save a list of dependencies and automatically install it after pulling the repository - and most popular languages have libraries for just about everything you'll need. 
 
-In fact, what you should probably be doing, is writing applications in whatever language you're most comfortable writing code in - because fast code is utterly worthless if you don't have any customers.
+In fact, what you should probably be doing, is writing applications in whatever language you're most comfortable writing code in - fast code is utterly worthless if you don't have any users, and the best way to get some users is with something - anything - that works.
 
-The actual wrong decision here is choosing a language with a concurrency model that's more complicated than you need for the task at hand, and wasting a bunch of time struggling with it.
+The actual wrong decision here is choosing a language that's more complicated than you need for the task at hand, and wasting a bunch of time struggling with it.
 
 #### Process Concurrency
 "But languages like python, ruby, or PHP don't support concurrency"
 
-Now, for those of you in the know, you know I'm sort-of lying about that - each of those languages has support for async or threads if you go spelunking in them - but let's pretend for just a moment you build a standard flask or django application in Python - that application can really, truly, only process one request at a time. It gets a request, and it has to respond to that request before it can move on to the next one. I've already said that this would be slow - but Python and PHP have been used to power some of the biggest websites on the internet? How do they do that? 
+Now, for those of you in the know, you know I'm sort-of lying about that - each of those languages has support for async and threads if you go spelunking in them - but let's pretend for just a moment you build a standard flask or django application in Python - that application can really, truly, only process one request at a time. It gets a request, and it has to respond to that request before it can move on to the next one. I've already said that this would be slow - but Python and PHP have been used to power some of the biggest websites on the internet? How do they do that? 
 
 Well, your operating system has concurrency built in. When you're launching a Python program in production, you're actually launching dozens of processes, each containing an identical Python program with its own fully independent memory. Then, an external program - an http server - load balances requests to all of these internal processes. In many cases this external program will also manage the whole process lifecycle for these internal processes. This external program is almost always written by people who are very smart about writing high performance code, so you're leaning on them to do a lot of the heavy lifting for you. All of the actual concurrency is provided by your operating system's scheduler - which, thanks to the fact that the processes don't share anything, means that you barely have to think about it at all.
 
@@ -359,7 +365,7 @@ Django and Rails, for example, are built around Model-View-Controller architectu
 
 Rust's warp and Node's express are built around more of a Pipeline model - a request is passed in and then the request and response are successively modified in stages until the response is ready to give back to the user. 
 
-A very common concept in web frameworks is the idea of "middleware" - once you build a pipeline stage that does something like "rate limiting" or "checks authentication", it's easy to roll it out across dozens of different endpoints.
+A very common concept in web frameworks is the idea of "middleware" - once you build a pipeline stage that does something like "rate limiting" or "checking authentication", it's easy to roll it out across dozens of different endpoints.
 
 -----
 
