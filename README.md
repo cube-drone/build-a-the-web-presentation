@@ -165,9 +165,10 @@ The actual wrong decision here is choosing a language that's more complicated th
 #### Process Concurrency
 "But languages like python, ruby, or PHP don't support concurrency"
 
-Now, for those of you in the know, you know I'm sort-of lying about that - each of those languages has support for async and threads if you go spelunking in them - but let's pretend for just a moment you build a standard flask or django application in Python - that application can really, truly, only process one request at a time. It gets a request, and it has to respond to that request before it can move on to the next one. I've already said that this would be slow - but Python and PHP have been used to power some of the biggest websites on the internet? How do they do that? 
+Now, for those of you in the know, you know I'm sort-of lying about that - each of those languages has support for async and threads if you go spelunking in them - but let's pretend for just a moment you build a standard flask or django application in Python - that application can really, truly, only process one request at a time. It gets a request, and it has to respond to that request before it can move on to the next one. I've already said that this would be slow - but Python and PHP have been used to power some of the biggest websites on the internet.
+How do they do that? 
 
-Well, your operating system has concurrency built in. When you're launching a Python program in production, you're actually launching dozens of processes, each containing an identical Python program with its own fully independent memory. Then, an external program - an http server - load balances requests to all of these internal processes. In many cases this external program will also manage the whole process lifecycle for these internal processes. This external program is almost always written by people who are very smart about writing high performance code, so you're leaning on them to do a lot of the heavy lifting for you. All of the actual concurrency is provided by your operating system's scheduler - which, thanks to the fact that the processes don't share anything, means that you barely have to think about it at all.
+Well, your operating system has concurrency built in. When you're launching a Python program in production, you're actually launching dozens of processes, each containing an identical Python program with its own fully independent memory. Then, an external program - an http server - load balances requests to all of these internal processes. In many cases this external program will also manage the whole process lifecycle for these internal processes. This external program is almost always written by people who are very smart about writing high performance code, so you're leaning on them to do a lot of the heavy lifting for you. All of the actual concurrency is provided by your operating system's scheduler - which, thanks to the fact that the processes don't share anything, means that you barely have to think about concurrency at all.
 
 This process-based concurrency model is the simplest, the easiest to deal with. From the point of view of the program you're writing, there is no concurrency. You just have to respond to one request at a time.
 
@@ -180,6 +181,8 @@ On top of that, a lot of time in web programming is spent waiting on network res
 
 What would be ideal, is, instead of jumping around from waiting process to waiting process, if we could find a way to get a single process to just be busy all the time. That means any time it has to wait on anything, it just remembers that it's waiting for that thing, and goes to do something else for a while.
 
+This is asynchronous programming - a style of programming where you have to intentionally indicate within the code "oop, this bit might take a while, don't come back to this until the thing is done".
+
 Programming like this is hard. You have to relearn a lot of your habits to switch from thinking synchronously to thinking asynchronously - writing your software around the idea that it has to consciously give up control any time it's waiting on something to execute.
 
 This also isn't really concurrency - it all still happens on a single thread of execution - but - this technique allows you to write a single process that stays white hot. Each individual process is able to deal with hundreds of simultaneous requests, because whenever it's waiting on something for request A, it can be working on something for request B, or C, or D, or E. If you have more than one CPU - if you want TRUE concurrency - you still have to scale out using the process model - one process per CPU - but only one process per CPU, because the process itself is handling the mechanics of keeping itself busy.
@@ -187,7 +190,7 @@ This also isn't really concurrency - it all still happens on a single thread of 
 This is the scheme underlying node.js, or some of python's newer frameworks. 
 
 ##### No Shared Memory
-The process-based concurrency model is very powerful and flexible - but - if you think about it - it really, really limits the amount of memory available to each of your processes. Lets say you have a computer with four CPUS, and 16GB of RAM - if you're process scaling with Ruby, and you create 16 processes to jump between, each process only has access to 1 gigabyte of working memory. If you're process scaling with node, and so you only need to create four processes - one per CPU - each process only has 4GB of memory to work with. 
+The process-based concurrency model is very powerful and flexible - but - if you think about it - it really limits the amount of memory available to each of your processes. Lets say you have a computer with four CPUS, and 16GB of RAM - if you're process scaling with Ruby, and you create 16 processes to jump between, each process only has access to 1 gigabyte of working memory. If you're process scaling with node, and so you only need to create four processes - one per CPU - each process only has 4GB of memory to work with. 
 
 Now, one of the reasons this is important is because a lot of process-scaled languages are also garbage collected and very flexible. Which means - memory leaks can accumulate pretty easily in the code. Which means your program can eat all of its working memory, and then die. 
 
@@ -208,7 +211,7 @@ One way to control that complexity of managing access to mutable shared memory i
 
 Another way to control the complexity of shared mutable state is with clever data structures. Using tools like atomic operations and copy-on-write, it's possible to build data structures that are highly resistant to being used in ways that will corrupt data.
 
-Another way to control that complexity is just to... embrance the madness. Get deep into mutex town and hope to hell you don't make a mistake. This is a common tactic for C++ programmers, who are crazy, and Rust programmers, who have invented a compiler so complicated that if you can write programs for it, at all, they're probably safe to run.
+Another way to control that complexity is just to... embrace the madness. Get deep into mutex town and hope to hell you don't make a mistake. This is a common tactic for C++ programmers, who are crazy, and Rust programmers, who have invented a compiler so complicated that _if_ you can write programs for it, at all, they're probably safe to run.
 
 Needless to say, unless you ARE writing a database, I don't necessarily recommend managing your own threaded concurrency and shared memory. In fact - if you're listening to me, an idiot, and learning things, you're probably not at the point in your career where you are ready to write database code yet. 
 
@@ -229,14 +232,14 @@ Every language has a bunch of different web frameworks, each of them encompassin
 
 When I first started building web applications, I tended towards very minimal framewoks, like flask for python, because their simple operation required very little learning on my part, and I could just slam code together until something interesting happened. 
 
-Then I started to tend towards more more maximal frameworks like Codeigniter for PHP, Django for Python, or Ruby on Rails for... Ruby - because they were very complete and opinionated and I learned a lot from how they wanted me to structure my code.
+Then I started to tend towards more more maximal frameworks like Codeigniter for PHP, Django for Python, or Ruby on Rails for... Ruby - because they were very complete and opinionated and I learned a lot from them about what components actually need to go into a full-fledged product.
 
 And.. now.. I'm back to preferring very minimal frameworks because now I'm very opinionated about how I want my code to go together, and I'd rather build everything, myself, from the ground up. 
 
 So... I don't know - spend some time learning about the different philosophies behind some of the different frameworks, try some out, see what you like. 
 
 ### Routing and Request, Response
-The one feature that I have never, ever seen a a web application framework leave out is routing. It feels like the minimum thing a web application framework needs to be .... is routing.
+The one feature that I have never, ever seen a a web application framework leave out is routing. It feels like, almost, the minimum thing a web application framework needs to be .... is routing.
 
 As we covered a little earlier, the role of a web server is to take HTTP requests and turn them into HTTP responses - and so, the beating heart of a lot of application code is a table that looks kinda like this:
 
@@ -247,10 +250,9 @@ As we covered a little earlier, the role of a web server is to take HTTP request
 * GET /login     => fn login_page()
 * POST /login    => fn login()
 ```
+Just...  a mapping between URL paths and the functions that are responsible for responding to requests for that path.
 
-Just... some kind of mapping between URL paths and the functions that are responsible for responding to requests for that path.
-
-How these functions operate can vary wildly from environment to environment, but ultimately they are responsible for taking a request and converting it into a response.
+How these functions operate can vary wildly from environment to environment, but ultimately they're responsible for taking a request and converting it into a response.
 
 Uh, PHP is kind of a funny special case in this sense, because, at least the way I remember it, PHPs routing is automatic - you have PHP files in a file tree and the server automatically routes requests to the file matching the query - so, if you have `GET /home/register.php` then it's going to look in your PHP folder for `/home/register.php` and execute whatever it finds there.  
 
@@ -272,12 +274,14 @@ The various `make` clones -  `make` classic, `rake`, `jake`,  and python's `invo
 One of the earliest things you're going to need to decide about your application is whether it's going to operate as a classic web application or a Single-Page Application.
 
 #### Website: Classic
-The way that websites used to work, long ago, was that each individual page request would result in your getting a different HTML page. If you hit `/subscribers/jeremy`, the system would go find a subscriber named Jeremy in its database, build a HTML page for you, and return that HTML page. If you wanted to post a comment on `/blog/comments`, that page would have a HTML Form element on it, and that HTML Form element, after you filled it out, would trigger a HTTP POST request, followed by a full page reload. In fact, every single interaction would involve a full page reload.
+The way that websites used to work, long ago, was that each individual page request would result in your getting a different HTML page. If you hit `/subscribers/jeremy`, the system would go find a subscriber named Jeremy in its database, build a HTML page for you, and return that HTML page. If you wanted to post a comment on `/blog/comments`, that page would have a HTML Form element on it, and that HTML Form element, after you filled it out, would trigger a HTTP POST request, followed by a full page load of whatever HTML came back from that POST request. In fact, every single interaction would involve a full page reload.
 
-This way of doing things often felt a little sluggish - think Craigslist, or PHPBB - and it is a terrible choice for a website with a lot of interaction - buut - it's a really powerful technique for websites that don't have a lot of complex interactions. If all your application needs to do is pull database records and display them neatly, this is the way to go.
+This way of doing things often felt a little sluggish - think Craigslist, or PHPBB - and it is a terrible choice for a website with a lot of interaction - buut - it's a really powerful technique for websites that don't have a lot of complex interactions. If all your application needs to do is pull database records and display them neatly, this is easily the best way to go. 
+
+The simple nature of websites that are just websites also plays particularly well with search engines, which find this kind of content the easiest to index.
 
 #### Progressive Enhancement
-Of course, you could take a classic website and include snippets of JavaScript functionality to liven things up, add basic application features, build buttons and menus that perform more interactive functionality. If you do this, while still keeping the site largely working like a Classic Website, you're engaged in Progressive Enhancement - you've got a classic website with some UI features, but everything still works like a regular website.  Old reddit worked this way, I _personally_ liked it better than the new reddit.
+Of course, you could take a classic website and include snippets of JavaScript functionality to liven things up, add basic application features, and build buttons and menus that perform more interactive functionality. If you do this, while still keeping the site largely working like a Classic Website, you're engaged in Progressive Enhancement - you've got a classic website with some UI features, but everything still works like a regular website.  Old reddit worked this way, I _personally_ liked it better than the new reddit.
 
 #### Single-Page Applications
 Nowadays the most popular way to build complicated websites is to skip the "website" part entirely: when you go to any url under modern reddit.com, for example, the site doesn't engage in routing the way that we described it earlier, at all. Instead, reddit routes everything to the same result: the entire JavaScript source code for a complete application. 
@@ -296,7 +300,7 @@ Many web application frameworks include a templating system, which is a system f
 
 You'll note that in the "Single Page Application" style of web development, there's not actually too much need to engage with templates on the server side - all your server will be doing is sending the user an application, and then communicating with that application back and forth using Remote Procedure Calls - so... any HTML befingerpoking is gonna be happening inside the JavaScript application, not from your server code. 
 
-Modern frameworks... don't bother themselves with templating nearly to the extend that older frameworks did. 
+Modern frameworks... don't bother themselves with templating nearly to the extent that older frameworks did. 
 
 ### Remote Procedure Calls (RPC) 
 On the other hand, modern frameworks do a LOT of remote procedure calls over HTTP.
