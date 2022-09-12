@@ -1,5 +1,5 @@
 # How to Build a Social Network
-![[slides/10-titlecard.png]]
+![](slides/10-titlecard.png)
 ## Intro
 Hi! This is a little microproject I want to do: I want to compress my years of experience building the API backend of a top-50 Steam game into a bunch of weird, rambling advice that I can deliver with all of the authority of someone who can't differentiate success due to merit from success due to luck.
 
