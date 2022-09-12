@@ -1,5 +1,5 @@
 # How to Build a Social Network
-
+![[10-titlecard.png]]
 ## Intro
 Hi! This is a little microproject I want to do: I want to compress my years of experience building the API backend of a top-50 Steam game into a bunch of weird, rambling advice that I can deliver with all of the authority of someone who can't differentiate success due to merit from success due to luck.
 
@@ -19,7 +19,9 @@ Based on the word count and my average elocution speed, I'm estimating that just
 
 Here, I'm going to pop up the Table of Contents so you have an idea what we're going to cover.
 
-_put a table of contents here maybe?__
+![[20-toc.png]]
+
+![[30-toc-2.png]]
 
 _Improv about ToC a bit.__
 
@@ -30,22 +32,29 @@ We are going to go fast.
 # Act I: Dev
 
 ## Client & Server: The Absolute Most Basic of Basics
+
+![[40-client-server.png]]
+
 The first thing to talk about is what a web application looks like. 
 
-* You have a browser. 
-* You type in cube-drone.com/hats. 
-* The browser automatically adds `http://` to the front of that
-* It uses DNS, the Domain Name System, to resolve `cube-drone.com` to an IP address. 
-* It uses HTTP, the Hypertext Transfer Protocol to connect to port 80 on the IP address it got for  `cube-drone.com` requesting `GET /hats`.
-* The server responds: with a 300 redirection, telling it that actually it should go look at `https://cube-drone.com/hats`, because we use encryption in this house young man
-* The browser tries again, with that new url, this time trying port `443`, the port for encrypted HTTP traffic. 
-* There's some web application server code on the other end of that connection. It gets the request for `GET /hats` and responds with a page of HTML. 
+* You have a browser. ![[50-back-and-forth-1.png]]
+* You type in cube-drone.com/hats. ![[50-back-and-forth-2.png]]
+* The browser automatically adds `http://` to the front of that![[50-back-and-forth-3.png]]
+* It uses DNS, the Domain Name System, to resolve `cube-drone.com` to an IP address. ![[50-back-and-forth-4.png]]
+* It uses HTTP, the Hypertext Transfer Protocol to connect to port 80 on the IP address it got for  `cube-drone.com` requesting `GET /hats`.![[50-back-and-forth-5.png]]
+* The server responds: with a 300 redirection, telling it that actually it should go look at `https://cube-drone.com/hats`, because we use encryption in this house young man.![[50-back-and-forth-6.png]]
+* The browser tries again, with that new url. ![[50-back-and-forth-7.png]]
+* Tiiiiiiiiihis time trying port `443`, the port for encrypted HTTP traffic. ![[50-back-and-forth-8.png]] 
+* There's some web application server code on the other end of that connection. It gets the request for `GET /hats` and responds with a 200 OK and a page of HTML.  ![[50-back-and-forth-9.png]]
 * The browser gets that page of HTML and renders it in glorious beautiful HTML style. 
-* Inside that HTML is a whole mess of Javascript, which executes code to build and construct a whole little application inside the browser.
-* That in-browser application does a bunch of interesting stuff, up to and including sending remote procedure calls back to the `https://cube-drone.com`  server to perform commands and ask for more information.
+* Inside that HTML is a whole mess of JavaScript.![[50-back-and-forth-10.png]]
+* That JavaScript executes code to take over the browser window, building and constructing a whole little application inside the browser. ![[50-back-and-forth-11.png]]
+* That in-browser application does a bunch of interesting stuff, up to and including sending remote procedure calls back to the `https://cube-drone.com`  server to perform commands and ask for more information. ![[50-back-and-forth-12.png]]
 * That's a web application! 
 
 So building web applications is largely about programming the parts that are happening on the server over here. 
+
+![[50-back-and-forth-13.png]]
 
 ### HTTP
 HTTP, the Hypertext Transfer Protocol, is all just a bunch of fancy stuff that sits on top of regular ol' TCP/IP.
