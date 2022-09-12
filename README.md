@@ -443,7 +443,7 @@ Like - if all admins have "write" permissions, and all regular users just have "
 
 Look, we did a normalization! Now if we want to update our admin permissions, or change a type, or add a new type, we only have to make that write one place, instead of hundreds of times across our entire table. 
 
-And the only expense was that we made our read a little more complicated - now we have to join data across two tables when we read, rather than just the one table.
+And the only expense was that we made our read a little more complicated - now in order to get all of the information we used to have in one table, we need to JOIN the type_id against the new table we've just created. Now our queries are against two tables instead of just the one.
 
 Awesome! But... we can go further. Let's normalize harder. We can split out the country, and the IP data, too.
 
@@ -483,13 +483,13 @@ We get all of this, and the only expense is that our queries get just a touch mo
 #### Denormalization
 (joke on slide: except too many layers of indirection)
 
-Uh, you might have noticed that that last example was a bit of a joke.
+Uh, you might have noticed that that last example was a bit ridiculous.
 
 It's possible that country codes don't need to be normalized into their own table. 
 
 In fact, country codes change very, very rarely, if at all - and - it turns out, doing a full-table find-and-replace once every 5-10 years might be less complicated than doing every single query for the entire lifetime of your application across two tables instead of just one. 
 
-That goes doubly for maintaining a whole extra table for IP address normalization, which I definitely just did to pull your chain a little. 
+That goes doubly for maintaining a whole extra table for IP address normalization, which I definitely just did as a joke.
 
 The driving factor behind normalization comes from a good place, a place of good engineering that lives deep within your gut, but - it's really possible for the desire for properly normalized systems to lead us down paths that actually make our designs worse, and harder to maintain.  
 
@@ -505,6 +505,13 @@ Joins make reads slower, more complicated, and harder to distribute across machi
 Up until fairly recently, MongoDB just didn't allow joins at all. Google's first big cloud-scale database, BigTable, was so named because it just gave you one big table. No normalization, just table.
 
 Normalization is still a enormously useful technique for how you design the layout of your data, but be aware: you probably need a lot less of it than you think.
+
+### Locks 
+Each row in your database can only be written to once at a time. Your database provides its own concurrency control around records, so that you don't accidentally corrupt them by writing them simultaneously. 
+
+However, one thing to be aware of is _how and how much of your database locks with every write_. 
+
+There are modes, for example, of 
 
 ### Indexes
 "My queries are slow". 
