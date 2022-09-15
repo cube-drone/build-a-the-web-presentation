@@ -35,9 +35,9 @@ We are going to go fast.
 
 The first thing to talk about is what a web application looks like. 
 
-* You have a browser. ![](slides/50-back-and-forth-1.png)
-* You type in cube-drone.com/hats. ![](slides/50-back-and-forth-2.png)
-* The browser automatically adds `http://` to the front of that![](slides/50-back-and-forth-3.png)
+* You have a browser. 
+* You type in cube-drone.com/hats. 
+* The browser automatically adds `http://` to the front of that
 * It uses DNS, the Domain Name System, to resolve `cube-drone.com` to an IP address. ![](slides/50-back-and-forth-4.png)
 * It uses HTTP, the Hypertext Transfer Protocol to connect to port 80 on the IP address it got for  `cube-drone.com` requesting `GET /hats`.![](slides/50-back-and-forth-5.png)
 * The server responds: with a 300 redirection, telling it that actually it should go look at `https://cube-drone.com/hats`, because we use encryption in this house young man.![](slides/50-back-and-forth-6.png)
