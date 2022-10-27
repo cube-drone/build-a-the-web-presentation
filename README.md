@@ -31,28 +31,24 @@ We are going to go fast.
 
 ## Client & Server: The Absolute Most Basic of Basics
 
-![](slides/40-client-server.png)
-
 The first thing to talk about is what a web application looks like. 
 
 * You have a browser. 
 * You type in cube-drone.com/hats. 
 * The browser automatically adds `http://` to the front of that
-* It uses DNS, the Domain Name System, to resolve `cube-drone.com` to an IP address. ![](slides/50-back-and-forth-4.png)
-* It uses HTTP, the Hypertext Transfer Protocol to connect to port 80 on the IP address it got for  `cube-drone.com` requesting `GET /hats`.![](slides/50-back-and-forth-5.png)
-* The server responds: with a 300 redirection, telling it that actually it should go look at `https://cube-drone.com/hats`, because we use encryption in this house young man.![](slides/50-back-and-forth-6.png)
-* The browser tries again, with that new url. ![](./slides/50-back-and-forth-7.png)
-* Tiiiiiiiiihis time trying port `443`, the port for encrypted HTTP traffic. ![](./slides/50-back-and-forth-8.png)
-* There's some web application server code on the other end of that connection. It gets the request for `GET /hats` and responds with a 200 OK and a page of HTML.  ![](slides/50-back-and-forth-9.png)
+* It uses DNS, the Domain Name System, to resolve `cube-drone.com` to an IP address. 
+* It uses HTTP, the Hypertext Transfer Protocol to connect to port 80 on the IP address it got for  `cube-drone.com` requesting `GET /hats`.
+* The server responds: with a 300 redirection, telling it that actually it should go look at `https://cube-drone.com/hats`, because we use encryption in this house young man.
+* The browser tries again, with that new url. 
+* Tiiiiiiiiihis time trying port `443`, the port for encrypted HTTP traffic. 
+* There's some web application server code on the other end of that connection. It gets the request for `GET /hats` and responds with a 200 OK and a page of HTML.  
 * The browser gets that page of HTML and renders it in glorious beautiful HTML style. 
-* Inside that HTML is a whole mess of JavaScript.![](slides/50-back-and-forth-10.png)
-* That JavaScript executes code to take over the browser window, building and constructing a whole little application inside the browser. ![](slides/50-back-and-forth-11.png)
-* That in-browser application does a bunch of interesting stuff, up to and including sending remote procedure calls back to the `https://cube-drone.com`  server to perform commands and ask for more information. ![](slides/50-back-and-forth-12.png)
+* Inside that HTML is a whole mess of JavaScript.
+* That JavaScript executes code to take over the browser window, building and constructing a whole little application inside the browser. 
+* That in-browser application does a bunch of interesting stuff, up to and including sending remote procedure calls back to the `https://cube-drone.com`  server to perform commands and ask for more information. 
 * That's a web application! 
 
 So building web applications is largely about programming the parts that are happening on the server over here. 
-
-![](slides/50-back-and-forth-13.png)
 
 ### HTTP
 HTTP, the Hypertext Transfer Protocol, is all just a bunch of fancy stuff that sits on top of regular ol' TCP/IP.
