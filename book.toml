@@ -1,0 +1,6 @@
+[book]
+authors = ["Curtis Lassam"]
+language = "en"
+multilingual = false
+src = "src"
+title = "How to Build a Social Network"
